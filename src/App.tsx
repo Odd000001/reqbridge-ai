@@ -99,8 +99,12 @@ function Icon({
   )
 }
 
-type ScenarioId = "rebate" | "repairs" | "blueBadge" | "schoolAdmissions" | "wasteCollection"
+type ScenarioId = "rebate" | "repairs" | "blueBadge" | "schoolAdmissions" | "wasteCollection" | "communityMeals"
 type ScenarioDecision = "primary" | "alternate"
+type UploadedSource = {
+  name: string
+  content: string
+}
 type ProcessNode = {
   id: string
   label: string
@@ -502,11 +506,89 @@ const scenarios: Record<ScenarioId, Scenario> = {
     securityThen:
       "the crew sees the property and collection details required for the visit, but not unnecessary contact information",
   },
+  communityMeals: {
+    project: "Community Services / Food Support Grant",
+    storyKey: "US-631",
+    storyTitle: "Apply for a community food support grant",
+    role: "community organisation coordinator",
+    action: "apply for a food support grant and track its progress",
+    benefit: "plan local food support using a clear funding decision",
+    transcriptFile: "Community_Food_Support_Transcript.txt",
+    processFile: "Community_Food_Support_Flow.bpmn",
+    transcriptMeta: "48m dialogue",
+    actorSummary: "Organisation coordinator · Grant officer · Finance team",
+    scopeSummary: "Apply · Check eligibility · Assess · Pay",
+    entitySummary: "Organisation · Grant application · Payment",
+    conflictTitle: "Income eligibility check",
+    conflictTopic: "how the organisation's income is checked",
+    transcriptQuote:
+      "The grant officer should check the latest signed accounts before deciding eligibility",
+    processQuote: "Mark applications under £30,000 eligible automatically",
+    primaryProcessLabel: "Grant officer reviews latest signed accounts",
+    alternateProcessLabel: "Allow automatic eligibility under £30,000",
+    primaryOption: "Require a grant officer to review accounts",
+    alternateOption: "Auto-check applications under £30,000",
+    primaryDecision:
+      "A grant officer reviews the latest signed accounts before confirming eligibility",
+    alternateDecision:
+      "Applications under £30,000 pass the income check without a grant officer review",
+    ambiguityTitle: "Grant decision timeframe",
+    ambiguityEvidence: "“Tell applicants when they will hear back”",
+    ambiguityPrimary: "within 15 working days",
+    ambiguityAlternate: "within 20 working days",
+    ambiguityGivenPrefix: "application has been waiting",
+    ambiguityGivenSuffix: "",
+    ambiguityWhen: "the application is still under review",
+    ambiguityThen: "send the coordinator a status update",
+    primaryWhen: "a complete application is received",
+    boundaryWhen: "the application is missing signed accounts",
+    primaryGiven: "a community organisation applies for food support funding",
+    boundaryGiven: "a community organisation has started an application",
+    policyEntity: "Organisation and financial records",
+    policyDescription:
+      "Restrict access to financial records, record staff decisions, and delete application documents when the retention period ends.",
+    transcriptContent: [
+      "Community Food Support workshop transcript · 48-minute dialogue",
+      "13:05 · Community grants lead: “We need to help local organisations provide food parcels and community meals.”",
+      "13:12 · Finance officer: “The grant officer should check the latest signed accounts before deciding eligibility.”",
+      "13:19 · Programme manager: “Small organisations may not have a dedicated finance team, so we should explain what documents are accepted.”",
+      "13:26 · Service designer: “The current flow marks applications under £30,000 eligible without an accounts review. That is not what we agreed.”",
+      "13:34 · Community partner: “Applicants need to know whether a draft has been saved and which documents are still missing.”",
+      "13:42 · Grants administrator: “Tell applicants when they will hear back, but we still need to agree the number of working days.”",
+      "13:51 · Information governance lead: “Only the grants and finance teams should see the accounts. Set a retention period for the uploaded records.”",
+      "14:02 · Product owner: “Record who checked eligibility and why, so the decision can be explained later.”",
+    ],
+    processSteps: [
+      { id: "A", label: "Organisation starts an application" },
+      { id: "B", label: "Upload organisation details and accounts" },
+      {
+        id: "C",
+        label: "Mark applications under £30,000 eligible automatically",
+      },
+      { id: "D", label: "Income under £30,000?", gateway: true },
+      { id: "E", label: "Grant officer reviews signed accounts" },
+      { id: "F", label: "Finance team confirms payment details" },
+      { id: "G", label: "Notify organisation of the decision" },
+    ],
+    conflictStep: "C",
+    conflictTranscriptIndex: 6,
+    decisionBoundary: "Applications missing signed accounts",
+    decisionBoundaryThen:
+      "Keep the application incomplete and tell the coordinator which documents are needed",
+    securityGiven: "an organisation uploads signed accounts",
+    securityWhen: "a grant or finance officer reviews the application",
+    securityThen:
+      "only authorised grant and finance staff can view the accounts, and access is recorded",
+  },
 }
 
 export default function App() {
   const [scenarioId, setScenarioId] = useState<ScenarioId>("rebate")
   const scenario = scenarios[scenarioId]
+  const [uploadedTranscript, setUploadedTranscript] =
+    useState<UploadedSource | null>(null)
+  const [uploadedBpmn, setUploadedBpmn] = useState<UploadedSource | null>(null)
+  const [uploadError, setUploadError] = useState("")
   const [resolved, setResolved] = useState(false)
   const [applying, setApplying] = useState(false)
   const [readiness, setReadiness] = useState(78)
@@ -744,6 +826,54 @@ _Source decision: CONF-01 · ${decisionDescription}._`
     setCopied(false)
   }
 
+  const handleSourceUpload = async (
+    file: File | undefined,
+    kind: "transcript" | "bpmn",
+  ) => {
+    if (!file) return
+    setUploadError("")
+    try {
+      const content = await file.text()
+      if (kind === "transcript") {
+        setUploadedTranscript(null)
+        if (
+          file.name !== "Community_Food_Support_Transcript.txt" ||
+          !content.includes("Community Food Support workshop transcript") ||
+          !content.includes("latest signed accounts")
+        ) {
+          setUploadError(
+            "Choose the supplied Community_Food_Support_Transcript.txt example file.",
+          )
+          return
+        }
+        setUploadedTranscript({ name: file.name, content })
+        return
+      }
+
+      setUploadedBpmn(null)
+      if (
+        file.name !== "Community_Food_Support_Flow.bpmn" ||
+        !/<(?:[\w.-]+:)?definitions\b/i.test(content) ||
+        !content.includes("Task_AutoEligibility")
+      ) {
+        setUploadError(
+          "Choose the supplied Community_Food_Support_Flow.bpmn example file.",
+        )
+        return
+      }
+      setUploadedBpmn({ name: file.name, content })
+    } catch {
+      setUploadError("Could not read the selected file. Please try again.")
+    }
+  }
+
+  const clearUploadedSources = () => {
+    setUploadedTranscript(null)
+    setUploadedBpmn(null)
+    setUploadError("")
+    if (scenarioId === "communityMeals") changeScenario("rebate")
+  }
+
   useEffect(() => {
     if (!applying) return
     const timeout = window.setTimeout(() => {
@@ -858,6 +988,12 @@ _Source decision: CONF-01 · ${decisionDescription}._`
     link.click()
     URL.revokeObjectURL(url)
   }
+
+  const communityMealsUnlocked = Boolean(uploadedTranscript && uploadedBpmn)
+  const transcriptLines =
+    scenarioId === "communityMeals" && uploadedTranscript
+      ? uploadedTranscript.content.split(/\r?\n/).filter(Boolean)
+      : scenario.transcriptContent
 
   return (
     <div className="min-h-screen bg-[var(--canvas)] text-[var(--ink)]">
@@ -992,6 +1128,9 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               <option value="blueBadge">Blue Badge Applications</option>
               <option value="schoolAdmissions">School Admissions</option>
               <option value="wasteCollection">Missed Waste Collections</option>
+              {communityMealsUnlocked && (
+                <option value="communityMeals">Community Food Support</option>
+              )}
             </select>
             <span className="text-[var(--line-strong)]">/</span>{" "}
             {canExport
@@ -1001,6 +1140,110 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                 : "Working draft"}
           </div>
         </div>
+
+        <section
+          aria-labelledby="upload-example-title"
+          className="mb-6 rounded-2xl border border-[var(--line)] bg-white p-5 md:p-6"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[var(--blue)]">
+                Try another example
+              </p>
+              <h2
+                id="upload-example-title"
+                className="mt-1 text-lg font-semibold"
+              >
+                Upload transcript and process map to load Community Food Support
+              </h2>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+                This demo loads a fixed example when both matching files are
+                selected. The files are read in this browser and are not sent to
+                a server.
+              </p>
+            </div>
+            <button
+              onClick={clearUploadedSources}
+              disabled={!uploadedTranscript && !uploadedBpmn}
+              className="text-xs font-semibold text-[var(--muted)] underline disabled:opacity-40"
+            >
+              Clear files
+            </button>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <label
+              htmlFor="transcript-upload"
+              className="cursor-pointer rounded-xl border border-dashed border-[var(--line-strong)] bg-[var(--soft)] p-4 hover:border-[var(--blue)]"
+            >
+              <span className="block text-xs font-semibold">
+                1. Workshop transcript (.txt)
+              </span>
+              <span className="mt-1 block truncate text-xs text-[var(--muted)]">
+                {uploadedTranscript?.name ?? "Choose the supplied transcript"}
+              </span>
+              <input
+                id="transcript-upload"
+                type="file"
+                accept=".txt,text/plain"
+                className="sr-only"
+                onChange={(event) =>
+                  void handleSourceUpload(
+                    event.currentTarget.files?.[0],
+                    "transcript",
+                  )
+                }
+              />
+            </label>
+            <label
+              htmlFor="bpmn-upload"
+              className="cursor-pointer rounded-xl border border-dashed border-[var(--line-strong)] bg-[var(--soft)] p-4 hover:border-[var(--blue)]"
+            >
+              <span className="block text-xs font-semibold">
+                2. Process map (.bpmn)
+              </span>
+              <span className="mt-1 block truncate text-xs text-[var(--muted)]">
+                {uploadedBpmn?.name ?? "Choose the supplied BPMN file"}
+              </span>
+              <input
+                id="bpmn-upload"
+                type="file"
+                accept=".bpmn,application/xml,text/xml"
+                className="sr-only"
+                onChange={(event) =>
+                  void handleSourceUpload(
+                    event.currentTarget.files?.[0],
+                    "bpmn",
+                  )
+                }
+              />
+            </label>
+          </div>
+          {uploadError && (
+            <p
+              role="alert"
+              className="mt-3 text-xs font-semibold text-[var(--red)]"
+            >
+              {uploadError}
+            </p>
+          )}
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+            <button
+              disabled={!communityMealsUnlocked}
+              onClick={() => changeScenario("communityMeals")}
+              className="rounded-lg bg-[var(--ink)] px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:bg-[var(--disabled)] disabled:text-[var(--muted)]"
+            >
+              {communityMealsUnlocked
+                ? "Load Community Food Support example"
+                : "Select both files to continue"}
+            </button>
+          </div>
+          {communityMealsUnlocked && (
+            <p role="status" className="mt-3 text-xs text-[var(--green-dark)]">
+              Both files are ready. The Community Food Support example is ready
+              to load from the workflow selector.
+            </p>
+          )}
+        </section>
 
         <div className="grid gap-5 lg:grid-cols-[250px_minmax(430px,1fr)_minmax(340px,.85fr)]">
           <aside className="rounded-2xl border border-[var(--line)] bg-white p-5">
@@ -1704,7 +1947,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             </div>
             {source === "transcript" ? (
               <div className="mt-8 space-y-5 text-sm leading-7 text-[var(--muted)]">
-                {scenario.transcriptContent.map((entry, index) => (
+                {transcriptLines.map((entry, index) => (
                   <p
                     key={entry}
                     className={
@@ -1760,13 +2003,20 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                               resolved &&
                               decision === "primary"
                             ? "Supervisor sign-off (> £500 only)"
-                            : resolved &&
-                                step.id === scenario.conflictStep &&
-                                scenarioId !== "rebate"
+                            : scenarioId === "communityMeals" &&
+                                resolved &&
+                                step.id === "C"
                               ? decision === "primary"
-                                ? (scenario.primaryProcessLabel ?? step.label)
-                                : (scenario.alternateProcessLabel ?? step.label)
-                              : step.label
+                                ? "Review signed accounts before eligibility decision"
+                                : "Auto-check applications under £30,000"
+                              : resolved &&
+                                  step.id === scenario.conflictStep &&
+                                  scenarioId !== "rebate"
+                                ? decision === "primary"
+                                  ? (scenario.primaryProcessLabel ?? step.label)
+                                  : (scenario.alternateProcessLabel ??
+                                    step.label)
+                                : step.label
                   return (
                     <div
                       key={step.id}
@@ -1810,9 +2060,33 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           )}
                         </div>
                       )}
+                      {step.gateway && scenarioId === "communityMeals" && (
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          <div className="rounded-md border border-[var(--line)] bg-white p-2 text-xs">
+                            {resolved && decision === "primary"
+                              ? "All applications → Grant officer reviews signed accounts"
+                              : "Under £30,000 → Mark eligible without accounts review"}
+                          </div>
+                          <div className="rounded-md border border-[var(--line)] bg-white p-2 text-xs">
+                            {resolved && decision === "primary"
+                              ? "Missing accounts → Keep draft and request documents"
+                              : "£30,000 or more → Grant officer reviews signed accounts"}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
+                {scenarioId === "communityMeals" && uploadedBpmn && (
+                  <details className="rounded-xl border border-[var(--line)] bg-white p-4">
+                    <summary className="cursor-pointer text-xs font-semibold">
+                      View uploaded BPMN source
+                    </summary>
+                    <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[var(--soft)] p-3 text-[10px] leading-5 text-[var(--muted)]">
+                      {uploadedBpmn.content}
+                    </pre>
+                  </details>
+                )}
               </div>
             ) : source === "custom" ? (
               <div className="mt-8">

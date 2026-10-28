@@ -31,3 +31,15 @@ Use `npm.cmd run build` to create a production build.
 Use the example selector in the workspace to switch scenarios. These are sample
 workflows with fixture evidence; exports are copied or downloaded for review.
 The app does not connect to Jira or Azure DevOps.
+
+## Upload demo files
+
+The workspace includes a paired upload panel for a fixed Community Food Support
+example. Select the provided transcript and BPMN source in the panel to load it:
+
+- `public/demo-sources/Community_Food_Support_Transcript.txt`
+- `public/demo-sources/Community_Food_Support_Flow.bpmn`
+
+The browser reads these files locally. They are not uploaded to a server or
+analysed. The supplied pair loads the prepared example and its interactive
+conflict, decision, and readiness workflow.
