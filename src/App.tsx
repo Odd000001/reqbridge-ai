@@ -101,6 +101,25 @@ function Icon({
 
 type ScenarioId = "rebate" | "repairs"
 type ScenarioDecision = "primary" | "alternate"
+type ProcessNode = {
+  id: string
+  label: string
+  gateway?: boolean
+}
+type AcceptanceScenario = {
+  given: string
+  when: string
+  then: string
+}
+type StorySpec = {
+  key: string
+  title: string
+  role: string
+  action: string
+  benefit: string
+  acceptance: AcceptanceScenario[]
+  requirements: string[]
+}
 type Scenario = {
   project: string
   storyKey: string
@@ -133,8 +152,8 @@ type Scenario = {
   policyEntity: string
   policyDescription: string
   transcriptContent: string[]
-  processSteps: string[]
-  conflictStep: number
+  processSteps: ProcessNode[]
+  conflictStep: string
   conflictTranscriptIndex: number
   decisionBoundary: string
   decisionBoundaryThen: string
@@ -150,7 +169,7 @@ const scenarios: Record<ScenarioId, Scenario> = {
     storyTitle: "Online rebate submission & automated eligibility",
     role: "resident",
     action: "submit my rebate claim online",
-    benefit: "eligible payments can be processed without delay",
+    benefit: "receive an eligibility decision within 1 working day",
     transcriptFile: "Workshop_Transcript.txt",
     processFile: "Process_Flow_v2.bpmn",
     transcriptMeta: "45m dialogue",
@@ -160,40 +179,46 @@ const scenarios: Record<ScenarioId, Scenario> = {
     conflictTitle: "Approval conflict",
     conflictTopic: "who approves a claim",
     transcriptQuote: "Claims of £500 or less are auto-approved",
-    processQuote: "All claims require supervisor approval",
+    processQuote:
+      "All claims go through a five-day check and supervisor sign-off",
     primaryOption: "Auto-approve claims up to £500",
     alternateOption: "Require supervisor review for all claims",
-    primaryDecision: "Claims of £500 or less are automatically approved",
-    alternateDecision: "Claims of £500 or less require supervisor approval",
+    primaryDecision:
+      "Claims of £500 or less are auto-approved, bypassing Nodes E and G",
+    alternateDecision:
+      "All claims go through the five-day caseworker check and supervisor sign-off",
     ambiguityTitle: "Residency period",
     ambiguityEvidence: "“a reasonable period”",
     ambiguityPrimary: "6 months",
     ambiguityAlternate: "12 months",
-    ambiguityGivenPrefix: "resident in borough >",
+    ambiguityGivenPrefix: "resident in borough ≥",
     ambiguityGivenSuffix: "",
-    primaryWhen: "claim ≤ £500",
-    boundaryWhen: "claim > £500",
+    primaryWhen: "verified claim value ≤ £500",
+    boundaryWhen: "verified claim value > £500",
     policyEntity: "Bank PII",
     policyDescription:
       "AES-256 encryption and immutable audit logs added to Definition of Done.",
     transcriptContent: [
       "Discovery workshop · 45-minute dialogue",
-      "18:16 · Finance officer — “We need to reduce the manual approval queue for smaller rebate claims.”",
+      "18:16 · Finance officer — “Residents should type their address and verify bank details instantly through Open Banking.”",
       "18:42 · Rebate Manager — “Claims of £500 or less should be auto-approved. Anything above that needs supervisor review.”",
-      "19:05 · Business analyst — “The current process flow still routes every claim to the supervisor. We need to agree the governing rule.”",
+      "19:01 · Caseworker — “The current flow sends every claim through a five-day manual check and supervisor sign-off.”",
+      "19:05 · Business analyst — “The flow also asks everyone to upload a utility bill and bank statement. That does not match the workshop.”",
     ],
     processSteps: [
-      "Resident submits claim",
-      "Validate resident details",
-      "Check eligibility",
-      "Supervisor reviews every claim",
-      "Queue payment",
-      "Record audit event",
+      { id: "A", label: "Resident submits claim" },
+      { id: "B", label: "Upload utility bill PDF" },
+      { id: "C", label: "Upload bank statement PDF" },
+      { id: "D", label: "Check residency and eligibility" },
+      { id: "F", label: "All claims?", gateway: true },
+      { id: "E", label: "Five-day manual caseworker check" },
+      { id: "G", label: "Supervisor sign-off" },
     ],
-    conflictStep: 3,
-    conflictTranscriptIndex: 2,
+    conflictStep: "G",
+    conflictTranscriptIndex: 3,
     decisionBoundary: "Claims above £500",
-    decisionBoundaryThen: "Supervisor review required",
+    decisionBoundaryThen:
+      "Five-day caseworker check followed by supervisor sign-off",
     securityGiven: "bank details are submitted",
     securityWhen: "details are stored or transmitted",
     securityThen: "details are encrypted using AES-256 and masked in logs",
@@ -217,8 +242,7 @@ const scenarios: Record<ScenarioId, Scenario> = {
     processQuote: "All new reports enter the standard queue",
     primaryOption: "Route emergencies to the on-call team",
     alternateOption: "Keep all reports in the standard queue",
-    primaryDecision:
-      "Emergency repairs are sent directly to the on-call team",
+    primaryDecision: "Emergency repairs are sent directly to the on-call team",
     alternateDecision:
       "All repair requests enter the standard queue for triage",
     ambiguityTitle: "Access notice period",
@@ -239,14 +263,14 @@ const scenarios: Record<ScenarioId, Scenario> = {
       "09:41 · Product owner — “We still need to agree how much notice we give tenants before entering the property.”",
     ],
     processSteps: [
-      "Tenant reports a repair",
-      "Capture property and contact details",
-      "Classify repair urgency",
-      "Add request to standard queue",
-      "Assign repairs team",
-      "Notify tenant and record updates",
+      { id: "A", label: "Tenant reports a repair" },
+      { id: "B", label: "Capture property and contact details" },
+      { id: "C", label: "Classify repair urgency" },
+      { id: "D", label: "Add request to standard queue" },
+      { id: "E", label: "Assign repairs team" },
+      { id: "F", label: "Notify tenant and record updates" },
     ],
-    conflictStep: 3,
+    conflictStep: "D",
     conflictTranscriptIndex: 1,
     decisionBoundary: "Non-emergency repairs",
     decisionBoundaryThen:
@@ -264,19 +288,20 @@ export default function App() {
   const [applying, setApplying] = useState(false)
   const [readiness, setReadiness] = useState(78)
   const [tab, setTab] = useState(0)
+  const [storyIndex, setStoryIndex] = useState(0)
   const [source, setSource] = useState<string | null>(null)
   const [policyOpen, setPolicyOpen] = useState(false)
-  const [ambiguity, setAmbiguity] = useState<
-    ScenarioDecision | "Clarify"
-  >("primary")
+  const [ambiguity, setAmbiguity] =
+    useState<ScenarioDecision | "Unconfirmed" | "Clarify">("Unconfirmed")
   const [decision, setDecision] = useState<ScenarioDecision>("primary")
   const [decisionTime, setDecisionTime] = useState("")
+  const [minorResolutions, setMinorResolutions] =
+    useState<Record<string, "adopt" | "dismiss">>({})
   const [modalOpen, setModalOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [format, setFormat] = useState<"Jira" | "Azure DevOps">("Jira")
-  const readinessTarget = !resolved ? 78 : ambiguity === "Clarify" ? 82 : 94
-  const canExport =
-    resolved && readiness >= 85 && ambiguity !== "Clarify" && !applying
+  const ambiguityConfirmed =
+    ambiguity === "primary" || ambiguity === "alternate"
   const decisionDescription =
     decision === "primary"
       ? scenario.primaryDecision
@@ -284,54 +309,187 @@ export default function App() {
   const ambiguityValue =
     ambiguity === "primary"
       ? scenario.ambiguityPrimary
-      : scenario.ambiguityAlternate
-  const scenarioGiven =
-    ambiguity === "Clarify"
-      ? `${scenario.ambiguityTitle.toLowerCase()} requirement is not yet defined`
-      : `${scenario.ambiguityGivenPrefix} ${ambiguityValue}${scenario.ambiguityGivenSuffix}`
-  const acceptanceCriteria = [
-    scenarioGiven,
-    decisionDescription,
-    `${scenario.decisionBoundary}: ${scenario.decisionBoundaryThen}`,
-    scenario.securityThen,
-    "The claim journey meets WCAG 2.1 AA",
-  ]
-  const exportText = `## ${scenario.storyKey} — ${scenario.storyTitle}
+      : ambiguity === "alternate"
+        ? scenario.ambiguityAlternate
+        : ""
+  const scenarioGiven = ambiguityConfirmed
+    ? `${scenario.ambiguityGivenPrefix} ${ambiguityValue}${scenario.ambiguityGivenSuffix}`
+    : `${scenario.ambiguityTitle.toLowerCase()} requirement has not been confirmed`
+  const storyOptions: StorySpec[] =
+    scenarioId === "rebate"
+      ? [
+          {
+            key: "US-104",
+            title: "Submit a rebate claim",
+            role: "resident",
+            action: "submit an online rebate claim",
+            benefit: "receive an eligibility decision within 1 working day",
+            acceptance: [
+              {
+                given: ambiguityConfirmed
+                  ? `I have lived in the borough for at least ${ambiguityValue}`
+                  : "the residency eligibility period has not been confirmed",
+                when: "I submit a complete claim",
+                then: ambiguityConfirmed
+                  ? "I receive a claim reference and eligibility decision within 1 working day"
+                  : "the claim remains a draft and cannot be submitted",
+              },
+              {
+                given: ambiguityConfirmed
+                  ? `I have lived in the borough for less than ${ambiguityValue}`
+                  : "I have lived in the borough for less than the minimum residency period",
+                when: "I submit a claim",
+                then: "the claim is declined and the eligibility reason is shown",
+              },
+            ],
+            requirements: ["WCAG 2.1 AA"],
+          },
+          {
+            key: "US-105",
+            title: "Apply the rebate approval rule",
+            role: "council finance officer",
+            action: "automatically approve eligible claims up to £500",
+            benefit: "reduce manual review while protecting public funds",
+            acceptance: [
+              {
+                given: ambiguityConfirmed
+                  ? "a resident meets the confirmed eligibility criteria"
+                  : "the residency eligibility period is unconfirmed",
+                when: "the verified claim value is exactly £500",
+                then: !ambiguityConfirmed
+                  ? "no approval decision is applied until eligibility is confirmed"
+                  : decision === "primary"
+                    ? "the claim is auto-approved and bypasses the five-day caseworker check and supervisor sign-off"
+                    : "the claim enters the five-day caseworker check and supervisor sign-off",
+              },
+              {
+                given: ambiguityConfirmed
+                  ? "a resident meets the confirmed eligibility criteria"
+                  : "the residency eligibility period is unconfirmed",
+                when: "the verified claim value is greater than £500",
+                then: "the claim enters the five-day caseworker check and supervisor sign-off",
+              },
+            ],
+            requirements: ["Audit every approval decision"],
+          },
+          {
+            key: "US-106",
+            title: "Capture bank details securely",
+            role: "resident",
+            action: "link a bank account through Open Banking",
+            benefit:
+              "receive an approved rebate without sharing raw account details",
+            acceptance: [
+              {
+                given: "I choose to add a bank account",
+                when: "I complete Open Banking verification",
+                then: "a payment token is stored instead of a raw account number",
+              },
+              {
+                given: "a verified bank account is displayed",
+                when: "I view my payment details",
+                then: "only the last four digits are displayed (****5678)",
+              },
+              {
+                given:
+                  "personal or payment data has reached its approved retention limit",
+                when: "the retention period expires",
+                then: "the data is securely deleted and the deletion is audited",
+              },
+            ],
+            requirements: ["GDPR Articles 5 and 32", "WCAG 2.1 AA"],
+          },
+        ]
+      : [
+          {
+            key: scenario.storyKey,
+            title: scenario.storyTitle,
+            role: scenario.role,
+            action: scenario.action,
+            benefit: scenario.benefit,
+            acceptance: [
+              {
+                given: scenarioGiven,
+                when: scenario.primaryWhen,
+                then: decisionDescription,
+              },
+              {
+                given: "a repair has been classified as non-emergency",
+                when: scenario.boundaryWhen,
+                then: scenario.decisionBoundaryThen,
+              },
+            ],
+            requirements: ["GDPR Art. 32", "WCAG 2.1 AA"],
+          },
+        ]
+  const activeStory = storyOptions[storyIndex] ?? storyOptions[0]
+  const readinessTarget = !resolved ? 78 : ambiguityConfirmed ? 94 : 88
+  const canExport =
+    resolved && readiness >= 85 && ambiguityConfirmed && !applying
+  const minorConflicts =
+    scenarioId === "rebate"
+      ? [
+          {
+            id: "CONF-02",
+            node: "Node B",
+            title: "Address evidence",
+            transcript: "Residents type their address",
+            process: "Process map requires a utility bill PDF upload",
+            why: "The evidence source and the captured data are different inputs.",
+          },
+          {
+            id: "CONF-03",
+            node: "Node C",
+            title: "Bank verification",
+            transcript: "Verify instantly through Open Banking",
+            process: "Process map requires a bank statement PDF upload",
+            why: "The verification method differs between the transcript and process map.",
+          },
+        ]
+      : []
+  const totalConflictCount = 1 + minorConflicts.length
+  const totalIssueCount = totalConflictCount + 1 + 2
+  const reviewedMinorCount = Object.keys(minorResolutions).length
+  const acceptanceCriteria = activeStory.acceptance.map(
+    ({ given, when, then }) => `Given ${given}; When ${when}; Then ${then}`,
+  )
+  const exportText = `## ${activeStory.key} — ${activeStory.title}
 
-**As a** ${scenario.role}  
-**I want to** ${scenario.action}  
-**So that** ${scenario.benefit}.
+**As a** ${activeStory.role}  
+**I want to** ${activeStory.action}  
+**So that** ${activeStory.benefit}.
 
 ### Acceptance Criteria
-- **Given** ${scenarioGiven}
-- **When** ${scenario.primaryWhen}
-- **Then** ${decisionDescription}
-- **When** ${scenario.boundaryWhen}
-- **Then** ${scenario.decisionBoundaryThen}
-- **Given** ${scenario.securityGiven}
-- **When** ${scenario.securityWhen}
-- **Then** ${scenario.securityThen}
+${activeStory.acceptance
+  .map(
+    ({ given, when, then }, index) =>
+      `#### Scenario ${index + 1}\n- **Given** ${given}\n- **When** ${when}\n- **Then** ${then}`,
+  )
+  .join("\n\n")}
 
 ### Definition of Done
 - Audit event recorded for every status change
+- Data minimisation and retention follow GDPR Article 5
 - Interface meets WCAG 2.1 AA
 
-_Decision source: CONF-01 · ${decisionDescription}._`
+_Source decision: CONF-01 · ${decisionDescription}._`
   const formattedExport =
     format === "Jira"
       ? exportText
-      : `# Azure DevOps · User Story\n\n${exportText.replace(`## ${scenario.storyKey}`, `## Title: ${scenario.storyKey}`)}`
+      : `# Azure DevOps · User Story\n\n${exportText.replace(`## ${activeStory.key}`, `## Title: ${activeStory.key}`)}`
 
   const resetWorkspace = () => {
     setResolved(false)
     setApplying(false)
     setReadiness(78)
     setTab(0)
+    setStoryIndex(0)
     setSource(null)
     setPolicyOpen(false)
-    setAmbiguity("primary")
+    setAmbiguity("Unconfirmed")
     setDecision("primary")
     setDecisionTime("")
+    setMinorResolutions({})
     setModalOpen(false)
     setCopied(false)
     setFormat("Jira")
@@ -343,11 +501,13 @@ _Decision source: CONF-01 · ${decisionDescription}._`
     setApplying(false)
     setReadiness(78)
     setTab(0)
+    setStoryIndex(0)
     setSource(null)
     setPolicyOpen(false)
-    setAmbiguity("primary")
+    setAmbiguity("Unconfirmed")
     setDecision("primary")
     setDecisionTime("")
+    setMinorResolutions({})
     setModalOpen(false)
     setCopied(false)
   }
@@ -444,14 +604,14 @@ _Decision source: CONF-01 · ${decisionDescription}._`
       [
         JSON.stringify(
           {
-            key: scenario.storyKey,
-            title: scenario.storyTitle,
+            key: activeStory.key,
+            title: activeStory.title,
             status: "Ready for delivery",
             readiness,
             decision,
             markdown: formattedExport,
             acceptanceCriteria,
-            requirements: ["GDPR Art. 32", "WCAG 2.1 AA"],
+            requirements: activeStory.requirements,
           },
           null,
           2,
@@ -462,7 +622,7 @@ _Decision source: CONF-01 · ${decisionDescription}._`
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
-    link.download = `${scenario.storyKey}-jira-export.json`
+    link.download = `${activeStory.key}-jira-export.json`
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -478,7 +638,9 @@ _Decision source: CONF-01 · ${decisionDescription}._`
             <div className="flex min-w-0 items-center gap-2 text-sm">
               <span className="truncate font-bold">ReqBridge</span>
               <span className="text-[var(--line-strong)]">/</span>
-              <span className="truncate text-[var(--muted)]">{scenario.project}</span>
+              <span className="truncate text-[var(--muted)]">
+                {scenario.project}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -513,7 +675,11 @@ _Decision source: CONF-01 · ${decisionDescription}._`
             label="Human triage"
             number="4"
             state={resolved ? "done" : "active"}
-            detail={resolved ? "Decision recorded" : "Review required"}
+            detail={
+              resolved
+                ? `1 blocker resolved · ${reviewedMinorCount}/${minorConflicts.length} warnings reviewed`
+                : `1 blocker · ${minorConflicts.length} warnings`
+            }
           />
           <span className="text-[var(--line-strong)]">—</span>
           <Step
@@ -528,7 +694,7 @@ _Decision source: CONF-01 · ${decisionDescription}._`
               ? "Recording decision"
               : canExport
                 ? "Ready for delivery export"
-                : ambiguity === "Clarify" && resolved
+                : !ambiguityConfirmed && resolved
                   ? "Clarification required"
                   : resolved
                     ? "Readiness recalculating"
@@ -557,8 +723,8 @@ _Decision source: CONF-01 · ${decisionDescription}._`
         <p role="status" className="sr-only">
           {!resolved
             ? `${scenario.conflictTitle} blocks export. Readiness ${readiness}%.`
-            : ambiguity === "Clarify"
-            ? `Decision recorded, but ${scenario.ambiguityTitle.toLowerCase()} clarification is pending. Readiness ${readiness}%. Export is locked.`
+            : !ambiguityConfirmed
+              ? `Conflict decision recorded, but ${scenario.ambiguityTitle.toLowerCase()} still needs confirmation. Readiness ${readiness}%. Export is locked.`
               : `Decision applied. Readiness ${readiness}%. Export is ${
                   canExport ? "available" : "locked"
                 }.`}
@@ -599,7 +765,7 @@ _Decision source: CONF-01 · ${decisionDescription}._`
             <span className="text-[var(--line-strong)]">/</span>{" "}
             {canExport
               ? "Ready to export"
-              : resolved && ambiguity === "Clarify"
+              : resolved && !ambiguityConfirmed
                 ? "Clarification needed"
                 : "Working draft"}
           </div>
@@ -618,7 +784,11 @@ _Decision source: CONF-01 · ${decisionDescription}._`
             />
             <SourceFile
               name={scenario.processFile}
-              meta={`${scenario.processSteps.length} steps`}
+              meta={
+                scenarioId === "rebate"
+                  ? "7 nodes · 1 gateway"
+                  : `${scenario.processSteps.length} steps`
+              }
               onClick={() => setSource("bpmn")}
             />
             <div className="my-5 border-t border-[var(--line)]" />
@@ -652,10 +822,10 @@ _Decision source: CONF-01 · ${decisionDescription}._`
               </div>
               <div className="mt-5 flex gap-1 overflow-x-auto border-b border-[var(--line)] text-xs">
                 {[
-                  "All  (3)",
-                  resolved ? "Resolved  (1)" : "Blockers  (1)",
-                  "Ambiguities  (1)",
-                  "Policies  (1)",
+                  `All (${totalIssueCount})`,
+                  `Conflicts (${totalConflictCount})`,
+                  "Ambiguities (1)",
+                  "Policies (2)",
                 ].map((label, index) => (
                   <button
                     key={label}
@@ -679,7 +849,7 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                       <StatusPill tone={resolved ? "green" : "red"}>
                         {resolved
                           ? "✓ Resolved · Decision recorded"
-                          : "Blocker · 2 conflicting sources"}
+                          : "Blocker · Confidence 98%"}
                       </StatusPill>
                       <h2 className="mt-3 text-base font-semibold">
                         {resolved
@@ -690,6 +860,11 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                         {resolved
                           ? `${decisionDescription} adopted as the agreed rule. Process flow step updated.`
                           : `The sources disagree about ${scenario.conflictTopic}. Choose the governing rule.`}
+                      </p>
+                      <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
+                        Why flagged: transcript approval rules conflict with
+                        Node {scenario.conflictStep}; the five-day caseworker
+                        check is also on the current route. Confidence: 98%.
                       </p>
                     </div>
                     {resolved && (
@@ -706,7 +881,7 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                       selected={resolved}
                     />
                     <Quote
-                      source={`Process flow · Step ${String(scenario.conflictStep + 1).padStart(2, "0")}`}
+                      source={`Process flow · Node ${scenario.conflictStep}`}
                       text={scenario.processQuote}
                       onClick={() => setSource("bpmn")}
                     />
@@ -721,7 +896,9 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                         }}
                         className="rounded-lg bg-[var(--red)] px-3.5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-[var(--red)] focus:ring-offset-2"
                       >
-                        {applying ? "Recording decision…" : scenario.primaryOption}
+                        {applying
+                          ? "Recording decision…"
+                          : scenario.primaryOption}
                       </button>
                       <button
                         disabled={applying}
@@ -743,46 +920,138 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                   ) : (
                     <div className="mt-4">
                       <div className="flex flex-wrap gap-2 rounded-lg bg-white p-1.5 ring-1 ring-[var(--line)]">
-                        {(
-                          ["primary", "alternate"] as const
-                        ).map((option) => (
-                            <button
-                              key={option}
-                              aria-pressed={decision === option}
-                              onClick={() => {
-                                setDecision(option)
-                                setDecisionTime(
-                                  new Date().toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  }),
-                                )
-                              }}
-                              className={`rounded-md px-3 py-2 text-xs font-semibold ${
-                                decision === option
-                                  ? "bg-[var(--ink)] text-white"
-                                  : "text-[var(--muted)]"
-                              }`}
-                            >
-                              {option === "primary"
-                                ? scenario.primaryOption
-                                : scenario.alternateOption}
-                            </button>
-                          ))}
+                        {(["primary", "alternate"] as const).map((option) => (
+                          <button
+                            key={option}
+                            aria-pressed={decision === option}
+                            onClick={() => {
+                              setDecision(option)
+                              setDecisionTime(
+                                new Date().toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }),
+                              )
+                            }}
+                            className={`rounded-md px-3 py-2 text-xs font-semibold ${
+                              decision === option
+                                ? "bg-[var(--ink)] text-white"
+                                : "text-[var(--muted)]"
+                            }`}
+                          >
+                            {option === "primary"
+                              ? scenario.primaryOption
+                              : scenario.alternateOption}
+                          </button>
+                        ))}
                       </div>
-                      <p className="mt-3 text-[11px] text-[var(--green-dark)]">
-                        {decisionTime} · Product Owner adopted {decisionDescription}.
-                        Decision recorded in audit history.
-                      </p>
+                      <details className="mt-3 text-[11px] text-[var(--green-dark)]">
+                        <summary className="cursor-pointer font-semibold">
+                          Decision audit · Product Owner · {decisionTime}
+                        </summary>
+                        <p className="mt-2">
+                          Why: Workshop evidence takes precedence over the
+                          outdated process map. {decisionDescription}.
+                        </p>
+                        <button
+                          onClick={() => {
+                            setResolved(false)
+                            setDecisionTime("")
+                          }}
+                          className="mt-2 font-semibold underline"
+                        >
+                          Undo decision
+                        </button>
+                      </details>
                     </div>
                   )}
                 </IssueCard>
               )}
 
+              {(tab === 0 || tab === 1) && (
+                <>
+                  {minorConflicts.map((conflict) => {
+                    const resolution = minorResolutions[conflict.id]
+                    const reviewed = resolution !== undefined
+                    return (
+                      <IssueCard
+                        key={conflict.id}
+                        tone={reviewed ? "green" : "amber"}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <StatusPill tone={reviewed ? "green" : "amber"}>
+                            {resolution === "adopt"
+                              ? "Resolved · Process map update proposed"
+                              : resolution === "dismiss"
+                                ? "Not an issue · Reviewer acknowledged"
+                                : "Warning · Confidence 93%"}
+                          </StatusPill>
+                          <span className="text-[10px] font-semibold text-[var(--muted)]">
+                            {conflict.node}
+                          </span>
+                        </div>
+                        <h3 className="mt-3 text-sm font-semibold">
+                          {conflict.id}: {conflict.title}
+                        </h3>
+                        <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
+                          Transcript: “{conflict.transcript}.” Process map: “
+                          {conflict.process}.”
+                        </p>
+                        <p className="mt-2 text-[11px] text-[var(--muted)]">
+                          Why flagged: {conflict.why}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            onClick={() =>
+                              setMinorResolutions((current) => ({
+                                ...current,
+                                [conflict.id]: "adopt",
+                              }))
+                            }
+                            aria-pressed={resolution === "adopt"}
+                            className="rounded-lg border border-[var(--line-strong)] bg-white px-3 py-2 text-xs font-semibold"
+                          >
+                            Adopt workshop input
+                          </button>
+                          <button
+                            onClick={() =>
+                              setMinorResolutions((current) => ({
+                                ...current,
+                                [conflict.id]: "dismiss",
+                              }))
+                            }
+                            aria-pressed={resolution === "dismiss"}
+                            className="rounded-lg border border-[var(--line-strong)] bg-white px-3 py-2 text-xs font-semibold"
+                          >
+                            Mark as not an issue
+                          </button>
+                          {reviewed && (
+                            <button
+                              onClick={() =>
+                                setMinorResolutions((current) => {
+                                  const next = { ...current }
+                                  delete next[conflict.id]
+                                  return next
+                                })
+                              }
+                              className="rounded-lg px-3 py-2 text-xs font-semibold text-[var(--muted)]"
+                            >
+                              Reopen
+                            </button>
+                          )}
+                        </div>
+                      </IssueCard>
+                    )
+                  })}
+                </>
+              )}
+
               {(tab === 0 || tab === 2) && (
-                <IssueCard tone="amber">
-                  <StatusPill tone="amber">
-                    Ambiguity · Workshop transcript · 12:08
+                <IssueCard tone={ambiguityConfirmed ? "green" : "amber"}>
+                  <StatusPill tone={ambiguityConfirmed ? "green" : "amber"}>
+                    {ambiguityConfirmed
+                      ? "Confirmed · Workshop transcript"
+                      : "Unconfirmed · Workshop transcript"}
                   </StatusPill>
                   <h2 className="mt-3 text-base font-semibold">
                     AMB-02: {scenario.ambiguityTitle}
@@ -790,36 +1059,54 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                   <p className="mt-1 text-sm text-[var(--muted)]">
                     Evidence: {scenario.ambiguityEvidence}
                   </p>
+                  <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
+                    Why flagged: the source has no testable threshold.
+                    Confidence: 88%.
+                  </p>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {(
-                      [
-                        scenario.ambiguityPrimary,
-                        scenario.ambiguityAlternate,
-                        "Clarify",
-                      ] as const
-                    ).map(
-                      (option) => (
-                        <button
-                          key={option}
-                          onClick={() => setAmbiguity(option)}
-                          aria-pressed={ambiguity === option}
-                          className="rounded-lg border border-[var(--line-strong)] bg-white px-3 py-2 text-xs font-semibold hover:bg-[var(--soft)]"
-                        >
-                          {option === "Clarify" ? "Request clarification" : option}
-                        </button>
-                      ),
-                    )}
+                    {([
+                      scenario.ambiguityPrimary,
+                      scenario.ambiguityAlternate,
+                      "Clarify",
+                    ] as const).map((option) => (
+                      <button
+                        key={option}
+                        onClick={() =>
+                          setAmbiguity(
+                            option === "Clarify"
+                              ? "Clarify"
+                              : option === scenario.ambiguityPrimary
+                                ? "primary"
+                                : "alternate",
+                          )
+                        }
+                        aria-pressed={
+                          option === "Clarify"
+                            ? !ambiguityConfirmed
+                            : option === scenario.ambiguityPrimary
+                              ? ambiguity === "primary"
+                              : ambiguity === "alternate"
+                        }
+                        className="rounded-lg border border-[var(--line-strong)] bg-white px-3 py-2 text-xs font-semibold hover:bg-[var(--soft)]"
+                      >
+                        {option === "Clarify"
+                          ? "Request clarification"
+                          : `Confirm ${option}`}
+                      </button>
+                    ))}
                     <span className="ml-auto self-center text-[11px] font-semibold text-[var(--amber-dark)]">
-                      {ambiguity === "Clarify"
-                        ? "Clarification requested"
-                        : `${ambiguityValue} · working assumption`}
+                      {!ambiguityConfirmed
+                        ? ambiguity === "Clarify"
+                          ? "Clarification requested · export blocked"
+                          : "Product Owner confirmation required"
+                        : `${ambiguityValue} · Product Owner confirmed`}
                     </span>
                   </div>
-                  {ambiguity === "Clarify" && (
+                  {!ambiguityConfirmed && (
                     <p className="mt-3 text-xs leading-5 text-[var(--amber-dark)]">
-                      Question prepared for the Product Owner: What is the
-                      required {scenario.ambiguityTitle.toLowerCase()}? Story
-                      criteria remain blocked pending confirmation.
+                      {ambiguity === "Clarify"
+                        ? `Question prepared for the Product Owner: What is the required ${scenario.ambiguityTitle.toLowerCase()}?`
+                        : `This value is only a suggested assumption. The Product Owner must explicitly confirm it before the story can be export-ready.`}
                     </p>
                   )}
                 </IssueCard>
@@ -838,7 +1125,7 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                       <h2 className="mt-2 text-base font-semibold">
                         POL-01: {scenario.policyEntity}{" "}
                         <span className="font-normal text-[var(--muted)]">
-                          (GDPR Art. 32)
+                          (GDPR Art. 5 &amp; 32)
                         </span>
                       </h2>
                       <p className="mt-1 text-sm text-[var(--muted)]">
@@ -860,17 +1147,56 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                         Definition of Done · GDPR Article 32
                       </strong>
                       <ul className="ml-4 list-disc">
-                        <li>AES-256 encryption for stored bank details.</li>
+                        <li>
+                          Use Open Banking tokens instead of storing raw bank
+                          account numbers.
+                        </li>
+                        <li>
+                          Display only the last four digits (****5678); mask
+                          sensitive values in logs.
+                        </li>
+                        <li>
+                          Define and enforce a retention period; delete data
+                          when it expires (GDPR Article 5).
+                        </li>
+                        <li>AES-256 encryption and access controls.</li>
                         <li>Immutable audit event for every status change.</li>
-                        <li>Access limited to authorised finance officers.</li>
                       </ul>
                       <p className="mt-2">
-                        Inferred safeguard for banking data; included in the
-                        export for review.
+                        Why flagged: bank details are sensitive personal data.
+                        These are proposed safeguards for stakeholder review.
                       </p>
                     </div>
                   )}
                 </IssueCard>
+              )}
+
+              {(tab === 0 || tab === 3) && (
+                <>
+                  <IssueCard tone="blue">
+                    <div className="flex items-start gap-3">
+                      <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--blue-soft)] text-[var(--blue)]">
+                        <Icon name="users" />
+                      </div>
+                      <div>
+                        <StatusPill tone="blue">
+                          POL-02 · Inferred NFR · Confidence 96%
+                        </StatusPill>
+                        <h2 className="mt-2 text-base font-semibold">
+                          Accessibility · WCAG 2.1 AA
+                        </h2>
+                        <p className="mt-1 text-sm text-[var(--muted)]">
+                          Keyboard-operable forms, labelled controls, screen
+                          reader announcements, and sufficient contrast.
+                        </p>
+                        <p className="mt-2 text-[11px] text-[var(--muted)]">
+                          Why included: the claim service is public-facing and
+                          must support people using assistive technology.
+                        </p>
+                      </div>
+                    </div>
+                  </IssueCard>
+                </>
               )}
             </div>
           </section>
@@ -941,10 +1267,46 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                 <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
                   {!resolved
                     ? `The ${scenario.conflictTitle.toLowerCase()} must be resolved before delivery.`
-                    : ambiguity === "Clarify"
-                      ? `The decision is recorded, but ${scenario.ambiguityTitle.toLowerCase()} rules need clarification before export.`
+                    : !ambiguityConfirmed
+                      ? `The decision is recorded, but ${scenario.ambiguityTitle.toLowerCase()} must be confirmed. Readiness is capped at 88%.`
                       : `All blockers cleared. Export unlocks at 85%; readiness is ${readiness}%.`}
                 </p>
+                <details className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--soft)] p-3 text-xs">
+                  <summary className="cursor-pointer font-semibold">
+                    Why {readiness}%? · View score breakdown
+                  </summary>
+                  <ul className="mt-3 space-y-2 text-[var(--muted)]">
+                    <li className="flex justify-between gap-3">
+                      <span>Source coverage</span>
+                      <span>25 / 25</span>
+                    </li>
+                    <li className="flex justify-between gap-3">
+                      <span>Acceptance criteria quality</span>
+                      <span>23 / 23</span>
+                    </li>
+                    <li className="flex justify-between gap-3">
+                      <span>Policy and NFR coverage</span>
+                      <span>20 / 20</span>
+                    </li>
+                    <li className="flex justify-between gap-3">
+                      <span>Blocking conflict resolved</span>
+                      <span>{resolved ? "10 / 10" : "0 / 10"}</span>
+                    </li>
+                    <li className="flex justify-between gap-3">
+                      <span>Product Owner ambiguity confirmation</span>
+                      <span>{ambiguityConfirmed ? "16 / 16" : "10 / 16"}</span>
+                    </li>
+                    <li className="flex justify-between gap-3 border-t border-[var(--line)] pt-2">
+                      <span>Estimate not supplied</span>
+                      <span>0 / 6</span>
+                    </li>
+                  </ul>
+                  <p className="mt-3 text-[var(--muted)]">
+                    Score = 25 + 23 + 20 + {resolved ? "10" : "0"} +{" "}
+                    {ambiguityConfirmed ? "16" : "10"} + 0. The missing estimate
+                    caps readiness at 94%.
+                  </p>
+                </details>
                 <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-[var(--soft)]">
                   <div
                     className={`h-full rounded-full transition-all duration-700 ${
@@ -956,59 +1318,72 @@ _Decision source: CONF-01 · ${decisionDescription}._`
               </div>
 
               <div className="border-t border-[var(--line)] p-5 md:p-6">
+                {storyOptions.length > 1 && (
+                  <div className="mb-5">
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
+                      INVEST-sized story set · {storyOptions.length} stories
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {storyOptions.map((story, index) => (
+                        <button
+                          key={story.key}
+                          onClick={() => setStoryIndex(index)}
+                          aria-pressed={storyIndex === index}
+                          className={`rounded-lg border px-3 py-2 text-left text-xs font-semibold ${
+                            storyIndex === index
+                              ? "border-[var(--ink)] bg-[var(--ink)] text-white"
+                              : "border-[var(--line)] bg-white text-[var(--muted)]"
+                          }`}
+                        >
+                          <span className="block font-mono">{story.key}</span>
+                          <span className="mt-1 block">{story.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-mono text-xs font-bold text-[var(--blue)]">
-                    {scenario.storyKey}
+                    {activeStory.key}
                   </span>
                   <StatusPill tone={canExport ? "green" : "neutral"}>
                     {canExport ? "Sprint-ready" : "Draft · In review"}
                   </StatusPill>
                 </div>
                 <h2 className="mt-3 font-display text-xl font-semibold leading-7">
-                  {scenario.storyTitle}
+                  {activeStory.title}
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
                   <strong className="text-[var(--ink)]">As a</strong>{" "}
-                  {scenario.role},{" "}
+                  {activeStory.role},{" "}
                   <strong className="text-[var(--ink)]">I want to</strong>{" "}
-                  {scenario.action}{" "}
+                  {activeStory.action}{" "}
                   <strong className="text-[var(--ink)]">so that</strong>{" "}
-                  {scenario.benefit}.
+                  {activeStory.benefit}.
                 </p>
                 <p className="mt-5 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
                   Acceptance criteria · BDD
                 </p>
-                <div className="mt-3 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--code-bg)] font-mono text-[11px] leading-5">
-                  <Criteria
-                    label="Given"
-                    value={scenarioGiven}
-                  />
-                  <Criteria
-                    label="When"
-                    value={scenario.primaryWhen}
-                    highlight={resolved}
-                  />
-                  <Criteria
-                    label="Then"
-                    value={
-                      !resolved
-                        ? "approval outcome pending source conflict resolution"
-                        : decisionDescription
-                    }
-                    highlight={resolved}
-                  />
-                  <Criteria
-                    label="When"
-                    value={scenario.decisionBoundary}
-                    highlight={resolved}
-                  />
-                  <Criteria
-                    label="Then"
-                    value={scenario.decisionBoundaryThen}
-                    highlight={resolved}
-                  />
+                <div className="mt-3 space-y-3">
+                  {activeStory.acceptance.map((acceptance, index) => (
+                    <div
+                      key={`${activeStory.key}-scenario-${index}`}
+                      className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--code-bg)] font-mono text-[11px] leading-5"
+                    >
+                      <div className="border-b border-[var(--line)] px-3 py-2 text-[10px] font-bold uppercase tracking-[.1em] text-[var(--muted)]">
+                        Scenario {index + 1}
+                      </div>
+                      <Criteria label="Given" value={acceptance.given} />
+                      <Criteria label="When" value={acceptance.when} />
+                      <Criteria
+                        label="Then"
+                        value={acceptance.then}
+                        highlight={resolved && ambiguityConfirmed}
+                      />
+                    </div>
+                  ))}
                 </div>
-                {resolved && ambiguity !== "Clarify" && (
+                {resolved && ambiguityConfirmed && (
                   <div className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[var(--green-dark)]">
                     <Icon name="spark" className="size-3.5" /> Criteria updated
                     from adopted decision
@@ -1018,8 +1393,9 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                   Attached requirements
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <Tag>✓ GDPR Art. 32</Tag>
-                  <Tag>✓ WCAG 2.1 AA</Tag>
+                  {activeStory.requirements.map((requirement) => (
+                    <Tag key={requirement}>✓ {requirement}</Tag>
+                  ))}
                 </div>
               </div>
 
@@ -1038,8 +1414,8 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                   <p className="mt-2 text-center text-[10px] text-[var(--muted)]">
                     {!resolved
                       ? `Resolve the ${scenario.conflictTitle.toLowerCase()} to enable export`
-                      : ambiguity === "Clarify"
-                        ? `Resolve the ${scenario.ambiguityTitle.toLowerCase()} clarification to enable export`
+                      : !ambiguityConfirmed
+                        ? `Confirm the ${scenario.ambiguityTitle.toLowerCase()} to enable export`
                         : "Readiness must reach 85% to enable export"}
                   </p>
                 )}
@@ -1053,7 +1429,8 @@ _Decision source: CONF-01 · ${decisionDescription}._`
         <div className="mx-auto flex max-w-[1480px] flex-col justify-between gap-2 px-5 py-5 text-[11px] text-[var(--muted)] sm:flex-row lg:px-8">
           <span>Source-linked decisions. Auditable by design.</span>
           <span className="flex items-center gap-1.5">
-            <span className="size-1.5 rounded-full bg-[var(--green)]" />             Workspace changes · session only
+            <span className="size-1.5 rounded-full bg-[var(--green)]" />{" "}
+            Workspace changes · session only
           </span>
         </div>
       </footer>
@@ -1110,40 +1487,88 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                   </p>
                 ))}
                 <p className="border-t border-[var(--line)] pt-4 text-xs">
-                  Example evidence for {scenario.storyKey}. Review the
-                  conflict and confirm the governing rule before export.
+                  Example evidence for {scenario.storyKey}. Review the conflict
+                  and confirm the governing rule before export.
                 </p>
               </div>
             ) : source === "bpmn" ? (
               <div className="mt-8 space-y-3">
-                {scenario.processSteps.map((step, index) => (
-                  <div
-                    key={step}
-                    className={`rounded-xl border p-4 text-sm ${
-                      index === scenario.conflictStep
-                        ? resolved
-                          ? "border-[var(--green-border)] bg-[var(--green-soft)]"
-                          : "border-[var(--red-border)] bg-[var(--red-soft)]"
-                        : "border-[var(--line)] bg-[var(--soft)]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span>
-                        {String(index + 1).padStart(2, "0")} · {step}
-                      </span>
-                      {index === scenario.conflictStep && (
-                        <StatusPill tone={resolved ? "green" : "red"}>
-                          {resolved ? "Decision recorded" : "Conflict"}
-                        </StatusPill>
+                {scenarioId === "rebate" && (
+                  <p className="rounded-lg bg-[var(--blue-soft)] p-3 text-xs leading-5 text-[var(--blue)]">
+                    Flow map · 7 nodes (A–G) · 1 gateway (F).{" "}
+                    {resolved
+                      ? "The agreed approval decision adds explicit value-based routing."
+                      : "Current flow sends every claim through manual review."}
+                  </p>
+                )}
+                {scenario.processSteps.map((step) => {
+                  const nodeConflict = step.id === scenario.conflictStep
+                  const label =
+                    scenarioId === "rebate" &&
+                    step.id === "B" &&
+                    minorResolutions["CONF-02"] === "adopt"
+                      ? "Resident enters address (no utility bill upload)"
+                      : scenarioId === "rebate" &&
+                          step.id === "C" &&
+                          minorResolutions["CONF-03"] === "adopt"
+                        ? "Verify bank account through Open Banking"
+                        : scenarioId === "rebate" &&
+                            step.id === "E" &&
+                            resolved &&
+                            decision === "primary"
+                          ? "Five-day caseworker check (> £500 only)"
+                          : scenarioId === "rebate" &&
+                              step.id === "G" &&
+                              resolved &&
+                              decision === "primary"
+                            ? "Supervisor sign-off (> £500 only)"
+                            : step.label
+                  return (
+                    <div
+                      key={step.id}
+                      className={`rounded-xl border p-4 text-sm ${
+                        nodeConflict
+                          ? resolved
+                            ? "border-[var(--green-border)] bg-[var(--green-soft)]"
+                            : "border-[var(--red-border)] bg-[var(--red-soft)]"
+                          : step.gateway
+                            ? "border-[var(--blue-border)] bg-[var(--blue-soft)]"
+                            : "border-[var(--line)] bg-[var(--soft)]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span>
+                          Node {step.id} · {label}
+                        </span>
+                        {nodeConflict && (
+                          <StatusPill tone={resolved ? "green" : "red"}>
+                            {resolved ? "Decision recorded" : "Conflict"}
+                          </StatusPill>
+                        )}
+                      </div>
+                      {nodeConflict && resolved && (
+                        <p className="mt-3 text-xs font-semibold text-[var(--green-dark)]">
+                          Adopted update: {decisionDescription}.
+                        </p>
+                      )}
+                      {step.gateway && scenarioId === "rebate" && (
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          <div className="rounded-md border border-[var(--line)] bg-white p-2 text-xs">
+                            {resolved && decision === "primary"
+                              ? "≤ £500 → Auto-approve → queue payment (bypass E + G)"
+                              : "All claims → Review required → Node E → Node G"}
+                          </div>
+                          {resolved && decision === "primary" && (
+                            <div className="rounded-md border border-[var(--line)] bg-white p-2 text-xs">
+                              &gt; £500 → Node E (5-day check) → Node G
+                              (supervisor)
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
-                    {index === scenario.conflictStep && resolved && (
-                      <p className="mt-3 text-xs font-semibold text-[var(--green-dark)]">
-                        Adopted update: {decisionDescription}.
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : source === "custom" ? (
               <div className="mt-8">
@@ -1152,9 +1577,7 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                   drafting requires additional Product Owner review.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
-                  {(
-                    ["primary", "alternate"] as const
-                  ).map((option) => (
+                  {(["primary", "alternate"] as const).map((option) => (
                     <button
                       key={option}
                       onClick={() => {
@@ -1203,7 +1626,7 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                   <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[var(--green-dark)]">
                     {canExport
                       ? "Ready to export"
-                      : resolved && ambiguity === "Clarify"
+                      : resolved && !ambiguityConfirmed
                         ? "Clarification needed"
                         : "Working draft"}
                   </p>
@@ -1211,7 +1634,7 @@ _Decision source: CONF-01 · ${decisionDescription}._`
                     id="export-title"
                     className="font-display mt-1 text-2xl font-semibold"
                   >
-                    {scenario.storyKey} formatted successfully
+                    {activeStory.key} formatted successfully
                   </h2>
                   <p className="mt-1 text-sm text-[var(--muted)]">
                     Prepared export only — no Jira issue has been created. Copy
