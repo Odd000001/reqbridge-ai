@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Inter', sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
+}
+
+:root {
+  --canvas: #ffffff;
+  --soft: #f8f9fa;
+  --disabled: #dce0de;
+  --line: #e5e7eb;
+  --line-strong: #cbd0cd;
+  --ink: #111827;
+  --muted: #65706a;
+  --code-ink: #33423a;
+  --code-bg: #f8faf8;
+  --red: #c8483e;
+  --red-soft: #fff5f3;
+  --red-border: #e9a9a3;
+  --amber: #d38b18;
+  --amber-dark: #8b5a0a;
+  --amber-soft: #fff9ec;
+  --amber-border: #ecd39d;
+  --green: #249366;
+  --green-dark: #176747;
+  --green-soft: #eef9f4;
+  --green-border: #98d1b9;
+  --blue: #316b8c;
+  --blue-soft: #edf6fa;
+  --blue-border: #a9cbdc;
+  --violet: #735a9a;
+  --violet-soft: #f3eff9;
+}
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    background: var(--canvas);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: var(--green-border);
+    color: var(--ink);
+  }
+}
+
+.font-display {
+  font-family: 'Inter', sans-serif;
+}
+
+.tone-red {
+  border-color: var(--red-border);
+  border-left-color: var(--red);
+  background: var(--red-soft);
+}
+
+.tone-amber {
+  border-color: var(--amber-border);
+  border-left-color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.tone-blue {
+  border-color: var(--blue-border);
+  border-left-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.tone-green {
+  border-color: var(--line);
+  border-left-color: var(--green);
+  background: var(--soft);
+}
+
+.pill-red {
+  background: #fbe3e0;
+  color: #9e3029;
+}
+
+.pill-amber {
+  background: #f8e9c8;
+  color: var(--amber-dark);
+}
+
+.pill-blue {
+  background: #dcecf3;
+  color: var(--blue);
+}
+
+.pill-green {
+  background: #d8f0e5;
+  color: var(--green-dark);
+}
+
+.pill-neutral {
+  background: var(--soft);
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

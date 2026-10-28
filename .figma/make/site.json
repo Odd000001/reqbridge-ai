@@ -1,0 +1,10 @@
+{
+  "description": "Validates transcripts and BPMN flows, resolves requirements conflicts, updates acceptance criteria, and exports Jira-ready or Azure DevOps work items.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
