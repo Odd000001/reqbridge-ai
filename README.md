@@ -1,8 +1,7 @@
 # ReqBridge AI
 
-ReqBridge AI turns workshop notes and process flows into source-linked,
-compliance-aware user stories. Review conflicting evidence, resolve ambiguous
-requirements, and prepare a validated story for backlog export.
+Compare workshop notes with process maps, record decisions, and prepare user
+stories and acceptance criteria for backlog review.
 
 ## Run locally
 
@@ -20,8 +19,14 @@ Use `npm.cmd run build` to create a production build.
 
 ## Example workflows
 
-- **Council Tax Rebate** — claim approval thresholds and residency eligibility.
-- **Housing Repairs** — emergency routing and tenant access notice.
+- **Council Tax Rebate:** claim approval thresholds and residency eligibility.
+- **Housing Repairs:** emergency routing and tenant access notice.
+- **Blue Badge Applications:** alternative evidence, assessment routing, and
+  applicant updates.
+- **School Admissions:** ranked school preferences, address evidence, and
+  application updates.
+- **Missed Waste Collections:** report deadlines, crew checks, and revisit
+  updates.
 
 Use the example selector in the workspace to switch scenarios. These are sample
 workflows with fixture evidence; exports are copied or downloaded for review.

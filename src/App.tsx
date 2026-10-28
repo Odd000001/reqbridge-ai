@@ -99,7 +99,7 @@ function Icon({
   )
 }
 
-type ScenarioId = "rebate" | "repairs"
+type ScenarioId = "rebate" | "repairs" | "blueBadge" | "schoolAdmissions" | "wasteCollection"
 type ScenarioDecision = "primary" | "alternate"
 type ProcessNode = {
   id: string
@@ -137,6 +137,8 @@ type Scenario = {
   conflictTopic: string
   transcriptQuote: string
   processQuote: string
+  primaryProcessLabel?: string
+  alternateProcessLabel?: string
   primaryOption: string
   alternateOption: string
   primaryDecision: string
@@ -147,8 +149,12 @@ type Scenario = {
   ambiguityAlternate: string
   ambiguityGivenPrefix: string
   ambiguityGivenSuffix: string
+  ambiguityWhen: string
+  ambiguityThen: string
   primaryWhen: string
   boundaryWhen: string
+  primaryGiven: string
+  boundaryGiven: string
   policyEntity: string
   policyDescription: string
   transcriptContent: string[]
@@ -193,17 +199,22 @@ const scenarios: Record<ScenarioId, Scenario> = {
     ambiguityAlternate: "12 months",
     ambiguityGivenPrefix: "resident in borough ≥",
     ambiguityGivenSuffix: "",
+    ambiguityWhen: "I submit a complete claim",
+    ambiguityThen:
+      "the residency requirement is applied to the eligibility decision",
     primaryWhen: "verified claim value ≤ £500",
     boundaryWhen: "verified claim value > £500",
+    primaryGiven: "a resident meets the confirmed eligibility criteria",
+    boundaryGiven: "a resident meets the confirmed eligibility criteria",
     policyEntity: "Bank PII",
     policyDescription:
       "AES-256 encryption and immutable audit logs added to Definition of Done.",
     transcriptContent: [
       "Discovery workshop · 45-minute dialogue",
-      "18:16 · Finance officer — “Residents should type their address and verify bank details instantly through Open Banking.”",
-      "18:42 · Rebate Manager — “Claims of £500 or less should be auto-approved. Anything above that needs supervisor review.”",
-      "19:01 · Caseworker — “The current flow sends every claim through a five-day manual check and supervisor sign-off.”",
-      "19:05 · Business analyst — “The flow also asks everyone to upload a utility bill and bank statement. That does not match the workshop.”",
+      "18:16 · Finance officer: “Residents should type their address and verify bank details instantly through Open Banking.”",
+      "18:42 · Rebate Manager: “Claims of £500 or less should be auto-approved. Anything above that needs supervisor review.”",
+      "19:01 · Caseworker: “The current flow sends every claim through a five-day manual check and supervisor sign-off.”",
+      "19:05 · Business analyst: “The flow also asks everyone to upload a utility bill and bank statement. That does not match the workshop.”",
     ],
     processSteps: [
       { id: "A", label: "Resident submits claim" },
@@ -240,6 +251,8 @@ const scenarios: Record<ScenarioId, Scenario> = {
     conflictTopic: "how emergency repairs are assigned",
     transcriptQuote: "Emergency repairs go straight to the on-call team",
     processQuote: "All new reports enter the standard queue",
+    primaryProcessLabel: "Route emergency repairs to the on-call team",
+    alternateProcessLabel: "Add all reports to the standard queue for triage",
     primaryOption: "Route emergencies to the on-call team",
     alternateOption: "Keep all reports in the standard queue",
     primaryDecision: "Emergency repairs are sent directly to the on-call team",
@@ -251,16 +264,21 @@ const scenarios: Record<ScenarioId, Scenario> = {
     ambiguityAlternate: "48 hours",
     ambiguityGivenPrefix: "tenant has received",
     ambiguityGivenSuffix: " access notice",
+    ambiguityWhen: "the contractor is ready to enter the property",
+    ambiguityThen: "entry is scheduled only after the confirmed notice period",
     primaryWhen: "an emergency repair is reported",
     boundaryWhen: "a non-emergency repair is reported",
+    primaryGiven: "a tenant reports a repair and provides the property address",
+    boundaryGiven:
+      "a tenant reports a repair and provides the property address",
     policyEntity: "Tenant contact data",
     policyDescription:
       "Encrypt tenant and property details, restrict access by role, and audit changes.",
     transcriptContent: [
       "Housing repairs workshop · 38-minute dialogue",
-      "09:12 · Repairs manager — “If a repair is an emergency, it needs to go directly to the on-call team. A leaking ceiling cannot wait in a queue.”",
-      "09:26 · Service designer — “Tenants should get a clear update when the team is assigned and when a visit is booked.”",
-      "09:41 · Product owner — “We still need to agree how much notice we give tenants before entering the property.”",
+      "09:12 · Repairs manager: “If a repair is an emergency, it needs to go directly to the on-call team. A leaking ceiling cannot wait in a queue.”",
+      "09:26 · Service designer: “Tenants should get a clear update when the team is assigned and when a visit is booked.”",
+      "09:41 · Product owner: “We still need to agree how much notice we give tenants before entering the property.”",
     ],
     processSteps: [
       { id: "A", label: "Tenant reports a repair" },
@@ -278,6 +296,211 @@ const scenarios: Record<ScenarioId, Scenario> = {
     securityGiven: "tenant and property details are submitted",
     securityWhen: "details are stored or accessed",
     securityThen: "details are encrypted and visible only to authorised staff",
+  },
+  blueBadge: {
+    project: "Public Sector / Blue Badge Applications",
+    storyKey: "US-302",
+    storyTitle: "Apply for and track a Blue Badge",
+    role: "resident",
+    action: "apply for a Blue Badge and check my application status",
+    benefit: "know what evidence is needed and when a decision is due",
+    transcriptFile: "Blue_Badge_Workshop_Transcript.txt",
+    processFile: "Blue_Badge_Application_Flow.bpmn",
+    transcriptMeta: "42m dialogue",
+    actorSummary: "Applicant · Assessment officer · Mobility team",
+    scopeSummary: "Apply · Submit evidence · Assess · Notify",
+    entitySummary: "Applicant · Health evidence · Application",
+    conflictTitle: "Assessment evidence",
+    conflictTopic: "which evidence is used to assess an application",
+    transcriptQuote:
+      "Some applicants do not have a mobility score. They should still be able to apply and send other evidence.",
+    processQuote: "Reject application if score is missing",
+    primaryProcessLabel:
+      "Send cases without a mobility score to an assessment officer",
+    alternateProcessLabel: "Require a mobility score before submission",
+    primaryOption: "Route missing mobility scores to an officer",
+    alternateOption: "Require a mobility score before submission",
+    primaryDecision:
+      "Applications without a mobility score are sent to an assessment officer",
+    alternateDecision:
+      "Applicants must provide a mobility score before submitting an application",
+    ambiguityTitle: "Assessment update timeframe",
+    ambiguityEvidence: "“Keep applicants updated regularly”",
+    ambiguityPrimary: "every 10 working days",
+    ambiguityAlternate: "every 15 working days",
+    ambiguityGivenPrefix: "the applicant last received an update",
+    ambiguityGivenSuffix: " ago",
+    ambiguityWhen: "the application is still being assessed",
+    ambiguityThen: "send the applicant a progress update",
+    primaryWhen: "an application is submitted without a mobility score",
+    boundaryWhen: "an application includes a mobility score",
+    primaryGiven: "an applicant has submitted the required supporting evidence",
+    boundaryGiven:
+      "an applicant has submitted the required supporting evidence",
+    policyEntity: "Health and identity evidence",
+    policyDescription:
+      "Limit access to health evidence to authorised assessment staff. Set a retention period and record access and decision changes.",
+    transcriptContent: [
+      "Blue Badge service workshop · 42-minute dialogue",
+      "10:02 · Mobility team lead: “An assessment officer reviews the supporting evidence and records the decision.”",
+      "10:14 · Customer service officer: “Some applicants do not have a mobility score. They should still be able to apply and send other evidence.”",
+      "10:27 · Digital service designer: “The current form stops people at the mobility score field and does not offer another route.”",
+      "10:39 · Assessment officer: “We need to tell applicants when their case is still being reviewed, not leave the status unchanged.”",
+      "10:44 · Product owner: “Let us agree whether an update is due every 10 or 15 working days.”",
+      "10:51 · Information governance lead: “Only the assessment team should see health evidence, and we need to define when it is deleted.”",
+    ],
+    processSteps: [
+      { id: "A", label: "Applicant starts an application" },
+      { id: "B", label: "Enter mobility score" },
+      { id: "C", label: "Reject application if score is missing" },
+      { id: "D", label: "Upload supporting evidence" },
+      { id: "E", label: "Assessment officer reviews application" },
+      { id: "F", label: "Send decision and status updates" },
+    ],
+    conflictStep: "C",
+    conflictTranscriptIndex: 2,
+    decisionBoundary: "Applications with a mobility score",
+    decisionBoundaryThen:
+      "Send the application to an assessment officer for review",
+    securityGiven: "an applicant submits health evidence",
+    securityWhen: "an officer opens or updates the application",
+    securityThen:
+      "only authorised assessment staff can view the evidence and access is recorded",
+  },
+  schoolAdmissions: {
+    project: "Public Sector / School Admissions",
+    storyKey: "US-417",
+    storyTitle: "Submit and track a school application",
+    role: "parent or carer",
+    action: "submit school preferences and track the application",
+    benefit: "know the application is complete and when an offer will be sent",
+    transcriptFile: "School_Admissions_Workshop_Transcript.txt",
+    processFile: "School_Admissions_Flow.bpmn",
+    transcriptMeta: "50m dialogue",
+    actorSummary: "Parent or carer · Admissions officer · School",
+    scopeSummary: "Add preferences · Check details · Assess · Notify",
+    entitySummary: "Child · School preference · Application",
+    conflictTitle: "School preference count",
+    conflictTopic: "how many school preferences an applicant can submit",
+    transcriptQuote:
+      "Families can list up to three schools in order of preference",
+    processQuote: "The form accepts one school choice for each application",
+    primaryProcessLabel: "Choose up to three schools in ranked order",
+    alternateProcessLabel: "Choose one school",
+    primaryOption: "Allow up to three ranked preferences",
+    alternateOption: "Accept one school preference",
+    primaryDecision:
+      "Applicants can submit up to three schools in ranked order",
+    alternateDecision: "Applicants can submit one school preference",
+    ambiguityTitle: "Address evidence deadline",
+    ambiguityEvidence: "“Provide proof of address before applications close”",
+    ambiguityPrimary: "within 5 working days",
+    ambiguityAlternate: "within 10 working days",
+    ambiguityGivenPrefix: "application submitted",
+    ambiguityGivenSuffix: " ago",
+    ambiguityWhen: "address evidence is still missing",
+    ambiguityThen: "tell the family when the address evidence must be provided",
+    primaryWhen: "a parent or carer submits school preferences",
+    boundaryWhen: "the parent or carer reviews the preference list",
+    primaryGiven: "a parent or carer is applying for a child",
+    boundaryGiven: "a parent or carer has entered school preferences",
+    policyEntity: "Children's and family information",
+    policyDescription:
+      "Collect only details needed to process an application. Restrict access to admissions staff and set a clear retention period.",
+    transcriptContent: [
+      "School admissions workshop · 50-minute dialogue",
+      "14:03 · Admissions manager: “Families can list up to three schools in order of preference.”",
+      "14:16 · Parent representative: “We need to review the list and change the order before submitting.”",
+      "14:24 · Digital product owner: “The current form only has one school choice and sends it straight to the admissions team.”",
+      "14:37 · Admissions officer: “Applicants need to know if anything is missing and how long they have to provide it.”",
+      "14:45 · School liaison: “The guidance says to provide proof of address before applications close, but it does not say how quickly after applying.”",
+      "14:51 · Information governance lead: “Application details should only be visible to staff who need them to process the case.”",
+    ],
+    processSteps: [
+      { id: "A", label: "Parent or carer starts application" },
+      { id: "B", label: "Choose one school" },
+      { id: "C", label: "Submit application" },
+      { id: "D", label: "Admissions officer checks address evidence" },
+      { id: "E", label: "Assess application against published criteria" },
+      { id: "F", label: "Send offer or outcome" },
+    ],
+    conflictStep: "B",
+    conflictTranscriptIndex: 1,
+    decisionBoundary: "Preference list changes",
+    decisionBoundaryThen:
+      "Allow the parent or carer to review and reorder the selected schools before submission",
+    securityGiven: "a parent or carer enters a child's application details",
+    securityWhen: "an admissions officer reviews the application",
+    securityThen:
+      "the application is visible only to staff assigned to admissions processing",
+  },
+  wasteCollection: {
+    project: "Public Sector / Missed Waste Collections",
+    storyKey: "US-526",
+    storyTitle: "Report and track a missed collection",
+    role: "resident",
+    action: "report a missed bin collection and check its status",
+    benefit: "know whether the collection will be revisited and when",
+    transcriptFile: "Missed_Collection_Workshop_Transcript.txt",
+    processFile: "Waste_Collection_Report_Flow.bpmn",
+    transcriptMeta: "35m dialogue",
+    actorSummary: "Resident · Contact centre · Collection crew",
+    scopeSummary: "Report · Check route · Assign · Update",
+    entitySummary: "Resident · Property · Collection report",
+    conflictTitle: "Report submission window",
+    conflictTopic: "how long residents have to report a missed collection",
+    transcriptQuote:
+      "Residents should report a missed collection within two working days",
+    processQuote:
+      "The online form accepts reports up to five calendar days after collection day",
+    primaryProcessLabel: "Check report date against two-working-day limit",
+    alternateProcessLabel: "Check report date against five-calendar-day limit",
+    primaryOption: "Use a two-working-day reporting window",
+    alternateOption: "Accept reports for five calendar days",
+    primaryDecision:
+      "Residents can report a missed collection within two working days",
+    alternateDecision:
+      "Residents can report a missed collection within five calendar days",
+    ambiguityTitle: "Collection status update time",
+    ambiguityEvidence: "“Tell the resident when the crew is coming back”",
+    ambiguityPrimary: "by 6 pm the next working day",
+    ambiguityAlternate: "within 2 working days",
+    ambiguityGivenPrefix: "missed collection report is",
+    ambiguityGivenSuffix: " old",
+    ambiguityWhen: "the report is still being reviewed",
+    ambiguityThen: "tell the resident when the crew will return",
+    primaryWhen: "a resident submits a report within the reporting window",
+    boundaryWhen: "a resident submits a report outside the reporting window",
+    primaryGiven: "a scheduled collection was not completed",
+    boundaryGiven: "a scheduled collection was not completed",
+    policyEntity: "Resident and property details",
+    policyDescription:
+      "Use the property address to check the collection route. Limit staff access to the details needed to handle the report and record changes.",
+    transcriptContent: [
+      "Missed collections workshop · 35-minute dialogue",
+      "08:35 · Waste services manager: “Residents should report a missed collection within two working days.”",
+      "08:43 · Contact centre lead: “The online form currently accepts reports for five calendar days after collection day.”",
+      "08:52 · Collection supervisor: “Before assigning a revisit, check whether the crew recorded an access issue or contamination.”",
+      "09:03 · Resident representative: “After I report it, I need to know whether the crew is coming back and when.”",
+      "09:11 · Product owner: “The team has not agreed whether that update is due by the next evening or within two working days.”",
+      "09:18 · Data protection officer: “Use the address to locate the route, but do not expose resident contact details to the whole crew.”",
+    ],
+    processSteps: [
+      { id: "A", label: "Resident selects collection and property" },
+      { id: "B", label: "Check report date against five-day limit" },
+      { id: "C", label: "Check crew notes and route status" },
+      { id: "D", label: "Assign a revisit if required" },
+      { id: "E", label: "Notify resident of the outcome" },
+    ],
+    conflictStep: "B",
+    conflictTranscriptIndex: 1,
+    decisionBoundary: "Reports outside the selected window",
+    decisionBoundaryThen:
+      "Show the resident the reporting limit and provide the contact centre details",
+    securityGiven: "a resident reports a missed collection",
+    securityWhen: "the crew receives a revisit assignment",
+    securityThen:
+      "the crew sees the property and collection details required for the visit, but not unnecessary contact information",
   },
 }
 
@@ -312,9 +535,6 @@ export default function App() {
       : ambiguity === "alternate"
         ? scenario.ambiguityAlternate
         : ""
-  const scenarioGiven = ambiguityConfirmed
-    ? `${scenario.ambiguityGivenPrefix} ${ambiguityValue}${scenario.ambiguityGivenSuffix}`
-    : `${scenario.ambiguityTitle.toLowerCase()} requirement has not been confirmed`
   const storyOptions: StorySpec[] =
     scenarioId === "rebate"
       ? [
@@ -409,14 +629,23 @@ export default function App() {
             benefit: scenario.benefit,
             acceptance: [
               {
-                given: scenarioGiven,
+                given: scenario.primaryGiven,
                 when: scenario.primaryWhen,
                 then: decisionDescription,
               },
               {
-                given: "a repair has been classified as non-emergency",
+                given: scenario.boundaryGiven,
                 when: scenario.boundaryWhen,
                 then: scenario.decisionBoundaryThen,
+              },
+              {
+                given: ambiguityConfirmed
+                  ? `${scenario.ambiguityGivenPrefix} ${ambiguityValue}${scenario.ambiguityGivenSuffix}`
+                  : `${scenario.ambiguityTitle.toLowerCase()} has not been confirmed`,
+                when: scenario.ambiguityWhen,
+                then: ambiguityConfirmed
+                  ? `${scenario.ambiguityThen} (${ambiguityValue})`
+                  : "hold the next step until the timeframe is confirmed",
               },
             ],
             requirements: ["GDPR Art. 32", "WCAG 2.1 AA"],
@@ -450,10 +679,13 @@ export default function App() {
   const totalConflictCount = 1 + minorConflicts.length
   const totalIssueCount = totalConflictCount + 1 + 2
   const reviewedMinorCount = Object.keys(minorResolutions).length
+  const gatewayCount = scenario.processSteps.filter(
+    (step) => step.gateway,
+  ).length
   const acceptanceCriteria = activeStory.acceptance.map(
     ({ given, when, then }) => `Given ${given}; When ${when}; Then ${then}`,
   )
-  const exportText = `## ${activeStory.key} — ${activeStory.title}
+  const exportText = `## ${activeStory.key}: ${activeStory.title}
 
 **As a** ${activeStory.role}  
 **I want to** ${activeStory.action}  
@@ -594,7 +826,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
       await navigator.clipboard.writeText(formattedExport)
       setCopied(true)
     } catch {
-      setSource("Clipboard unavailable — download JSON instead.")
+      setSource("Clipboard unavailable. Download the JSON instead.")
     }
     window.setTimeout(() => setCopied(false), 1800)
   }
@@ -661,16 +893,16 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             DELIVERY WORKFLOW
           </span>
           <Step label="Ingest & extract" number="1" state="done" />
-          <span className="text-[var(--line-strong)]">—</span>
+          <span className="text-[var(--line-strong)]">·</span>
           <Step
             label="Audit & policy"
             number="2"
             state="done"
             detail="2 checks"
           />
-          <span className="text-[var(--line-strong)]">—</span>
+          <span className="text-[var(--line-strong)]">·</span>
           <Step label="Story draft" number="3" state="done" />
-          <span className="text-[var(--line-strong)]">—</span>
+          <span className="text-[var(--line-strong)]">·</span>
           <Step
             label="Human triage"
             number="4"
@@ -681,7 +913,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                 : `1 blocker · ${minorConflicts.length} warnings`
             }
           />
-          <span className="text-[var(--line-strong)]">—</span>
+          <span className="text-[var(--line-strong)]">·</span>
           <Step
             label="Backlog export"
             number="5"
@@ -735,11 +967,11 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               Requirements to delivery
             </p>
             <h1 className="font-display text-3xl font-semibold tracking-[-.03em] md:text-4xl">
-              Resolve the gaps. Ship with confidence.
+              Review evidence. Resolve differences. Prepare backlog stories.
             </h1>
             <p className="mt-2 text-sm text-[var(--muted)]">
-              Every decision is source-linked, reviewable and ready for your
-              backlog.
+              Check each decision against its source before preparing the
+              backlog story.
             </p>
           </div>
           <div className="flex items-center gap-2 self-start rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs text-[var(--muted)] md:self-auto">
@@ -750,17 +982,16 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               id="scenario-select"
               value={scenarioId}
               onChange={(event) => {
-                if (
-                  event.target.value === "rebate" ||
-                  event.target.value === "repairs"
-                ) {
-                  changeScenario(event.target.value)
-                }
+                const nextScenario = event.target.value as ScenarioId
+                if (nextScenario in scenarios) changeScenario(nextScenario)
               }}
               className="max-w-[230px] rounded-md border-0 bg-transparent py-1 text-xs font-semibold text-[var(--ink)] focus:ring-2 focus:ring-[var(--blue)]"
             >
               <option value="rebate">Council Tax Rebate</option>
               <option value="repairs">Housing Repairs</option>
+              <option value="blueBadge">Blue Badge Applications</option>
+              <option value="schoolAdmissions">School Admissions</option>
+              <option value="wasteCollection">Missed Waste Collections</option>
             </select>
             <span className="text-[var(--line-strong)]">/</span>{" "}
             {canExport
@@ -784,11 +1015,9 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             />
             <SourceFile
               name={scenario.processFile}
-              meta={
-                scenarioId === "rebate"
-                  ? "7 nodes · 1 gateway"
-                  : `${scenario.processSteps.length} steps`
-              }
+              meta={`${scenario.processSteps.length} nodes · ${gatewayCount} ${
+                gatewayCount === 1 ? "gateway" : "gateways"
+              }`}
               onClick={() => setSource("bpmn")}
             />
             <div className="my-5 border-t border-[var(--line)]" />
@@ -798,19 +1027,19 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             <DirectoryItem
               icon="users"
               title="Actors"
-              count="5"
+              count={String(scenario.actorSummary.split(" · ").length)}
               detail={scenario.actorSummary}
             />
             <DirectoryItem
               icon="spark"
-              title="Functional scope rules"
-              count="8"
+              title="Workflow areas"
+              count={String(scenario.scopeSummary.split(" · ").length)}
               detail={scenario.scopeSummary}
             />
             <DirectoryItem
               icon="file"
               title="Data entities"
-              count="4"
+              count={String(scenario.entitySummary.split(" · ").length)}
               detail={scenario.entitySummary}
             />
           </aside>
@@ -849,11 +1078,11 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       <StatusPill tone={resolved ? "green" : "red"}>
                         {resolved
                           ? "✓ Resolved · Decision recorded"
-                          : "Blocker · Confidence 98%"}
+                          : "Blocker · Needs a decision"}
                       </StatusPill>
                       <h2 className="mt-3 text-base font-semibold">
                         {resolved
-                          ? `CONF-01: ${scenario.conflictTitle} — Decision Recorded`
+                          ? `CONF-01: ${scenario.conflictTitle}: Decision recorded`
                           : `CONF-01: ${scenario.conflictTitle}`}
                       </h2>
                       <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
@@ -862,9 +1091,9 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           : `The sources disagree about ${scenario.conflictTopic}. Choose the governing rule.`}
                       </p>
                       <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
-                        Why flagged: transcript approval rules conflict with
-                        Node {scenario.conflictStep}; the five-day caseworker
-                        check is also on the current route. Confidence: 98%.
+                        Reason: the workshop account of {scenario.conflictTopic}{" "}
+                        differs from the process map at Node{" "}
+                        {scenario.conflictStep}.
                       </p>
                     </div>
                     {resolved && (
@@ -984,7 +1213,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                               ? "Resolved · Process map update proposed"
                               : resolution === "dismiss"
                                 ? "Not an issue · Reviewer acknowledged"
-                                : "Warning · Confidence 93%"}
+                                : "Warning · Needs review"}
                           </StatusPill>
                           <span className="text-[10px] font-semibold text-[var(--muted)]">
                             {conflict.node}
@@ -998,7 +1227,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           {conflict.process}.”
                         </p>
                         <p className="mt-2 text-[11px] text-[var(--muted)]">
-                          Why flagged: {conflict.why}
+                          Reason: {conflict.why}
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <button
@@ -1060,8 +1289,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                     Evidence: {scenario.ambiguityEvidence}
                   </p>
                   <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
-                    Why flagged: the source has no testable threshold.
-                    Confidence: 88%.
+                    Reason: the source does not define a testable threshold.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {([
@@ -1120,7 +1348,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                     </div>
                     <div>
                       <StatusPill tone="blue">
-                        Inferred NFR · Automatically injected
+                        Data protection requirement · Review
                       </StatusPill>
                       <h2 className="mt-2 text-base font-semibold">
                         POL-01: {scenario.policyEntity}{" "}
@@ -1148,23 +1376,25 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       </strong>
                       <ul className="ml-4 list-disc">
                         <li>
-                          Use Open Banking tokens instead of storing raw bank
-                          account numbers.
+                          Collect only the personal information needed for the
+                          service.
                         </li>
                         <li>
-                          Display only the last four digits (****5678); mask
-                          sensitive values in logs.
+                          Limit access to staff who need the information for
+                          their role.
                         </li>
                         <li>
-                          Define and enforce a retention period; delete data
-                          when it expires (GDPR Article 5).
+                          Set a retention period and delete information when it
+                          is no longer needed.
                         </li>
-                        <li>AES-256 encryption and access controls.</li>
-                        <li>Immutable audit event for every status change.</li>
+                        <li>
+                          Encrypt sensitive information in storage and transit.
+                        </li>
+                        <li>Record access and changes to the application.</li>
                       </ul>
                       <p className="mt-2">
-                        Why flagged: bank details are sensitive personal data.
-                        These are proposed safeguards for stakeholder review.
+                        Reason: bank details are personal data. Confirm these
+                        safeguards with the relevant team.
                       </p>
                     </div>
                   )}
@@ -1180,7 +1410,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       </div>
                       <div>
                         <StatusPill tone="blue">
-                          POL-02 · Inferred NFR · Confidence 96%
+                          POL-02 · Accessibility requirement
                         </StatusPill>
                         <h2 className="mt-2 text-base font-semibold">
                           Accessibility · WCAG 2.1 AA
@@ -1190,8 +1420,8 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           reader announcements, and sufficient contrast.
                         </p>
                         <p className="mt-2 text-[11px] text-[var(--muted)]">
-                          Why included: the claim service is public-facing and
-                          must support people using assistive technology.
+                          Why included: residents use this service, including
+                          people who rely on assistive technology.
                         </p>
                       </div>
                     </div>
@@ -1385,8 +1615,8 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                 </div>
                 {resolved && ambiguityConfirmed && (
                   <div className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[var(--green-dark)]">
-                    <Icon name="spark" className="size-3.5" /> Criteria updated
-                    from adopted decision
+                    <Icon name="check" className="size-3.5" /> Acceptance
+                    criteria reflect this decision
                   </div>
                 )}
                 <p className="mt-5 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
@@ -1493,9 +1723,17 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               </div>
             ) : source === "bpmn" ? (
               <div className="mt-8 space-y-3">
+                {scenarioId !== "rebate" && (
+                  <p className="rounded-lg bg-[var(--blue-soft)] p-3 text-xs leading-5 text-[var(--blue)]">
+                    Flow map: {scenario.processSteps.length} nodes.{" "}
+                    {resolved
+                      ? `Node ${scenario.conflictStep} reflects the selected decision.`
+                      : `The difference is at Node ${scenario.conflictStep}.`}
+                  </p>
+                )}
                 {scenarioId === "rebate" && (
                   <p className="rounded-lg bg-[var(--blue-soft)] p-3 text-xs leading-5 text-[var(--blue)]">
-                    Flow map · 7 nodes (A–G) · 1 gateway (F).{" "}
+                    Flow map: 7 nodes (A-G), 1 gateway (F).{" "}
                     {resolved
                       ? "The agreed approval decision adds explicit value-based routing."
                       : "Current flow sends every claim through manual review."}
@@ -1522,7 +1760,13 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                               resolved &&
                               decision === "primary"
                             ? "Supervisor sign-off (> £500 only)"
-                            : step.label
+                            : resolved &&
+                                step.id === scenario.conflictStep &&
+                                scenarioId !== "rebate"
+                              ? decision === "primary"
+                                ? (scenario.primaryProcessLabel ?? step.label)
+                                : (scenario.alternateProcessLabel ?? step.label)
+                              : step.label
                   return (
                     <div
                       key={step.id}
@@ -1637,8 +1881,8 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                     {activeStory.key} formatted successfully
                   </h2>
                   <p className="mt-1 text-sm text-[var(--muted)]">
-                    Prepared export only — no Jira issue has been created. Copy
-                    or download to add to your backlog.
+                    This is a draft only. No Jira issue has been created. Copy
+                    or download it to add to your backlog.
                   </p>
                 </div>
               </div>
