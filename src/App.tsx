@@ -174,7 +174,7 @@ type Scenario = {
 
 const scenarios: Record<ScenarioId, Scenario> = {
   rebate: {
-    project: "Public Sector / Council Tax Rebate",
+    project: "Council Tax Rebate",
     storyKey: "US-104",
     storyTitle: "Online rebate submission & automated eligibility",
     role: "resident",
@@ -194,7 +194,7 @@ const scenarios: Record<ScenarioId, Scenario> = {
     primaryOption: "Auto-approve claims up to £500",
     alternateOption: "Require supervisor review for all claims",
     primaryDecision:
-      "Claims of £500 or less are auto-approved, bypassing Nodes E and G",
+      "Claims of £500 or less are auto-approved, bypassing the five-day caseworker check and supervisor sign-off",
     alternateDecision:
       "All claims go through the five-day caseworker check and supervisor sign-off",
     ambiguityTitle: "Residency period",
@@ -239,7 +239,7 @@ const scenarios: Record<ScenarioId, Scenario> = {
     securityThen: "details are encrypted using AES-256 and masked in logs",
   },
   repairs: {
-    project: "Public Sector / Housing Repairs",
+    project: "Housing Repairs",
     storyKey: "US-218",
     storyTitle: "Report a repair & track its response",
     role: "tenant",
@@ -302,7 +302,7 @@ const scenarios: Record<ScenarioId, Scenario> = {
     securityThen: "details are encrypted and visible only to authorised staff",
   },
   blueBadge: {
-    project: "Public Sector / Blue Badge Applications",
+    project: "Blue Badge Applications",
     storyKey: "US-302",
     storyTitle: "Apply for and track a Blue Badge",
     role: "resident",
@@ -372,7 +372,7 @@ const scenarios: Record<ScenarioId, Scenario> = {
       "only authorised assessment staff can view the evidence and access is recorded",
   },
   schoolAdmissions: {
-    project: "Public Sector / School Admissions",
+    project: "School Admissions",
     storyKey: "US-417",
     storyTitle: "Submit and track a school application",
     role: "parent or carer",
@@ -439,7 +439,7 @@ const scenarios: Record<ScenarioId, Scenario> = {
       "the application is visible only to staff assigned to admissions processing",
   },
   wasteCollection: {
-    project: "Public Sector / Missed Waste Collections",
+    project: "Missed Waste Collections",
     storyKey: "US-526",
     storyTitle: "Report and track a missed collection",
     role: "resident",
@@ -507,7 +507,7 @@ const scenarios: Record<ScenarioId, Scenario> = {
       "the crew sees the property and collection details required for the visit, but not unnecessary contact information",
   },
   communityMeals: {
-    project: "Community Services / Food Support Grant",
+    project: "Community Food Support",
     storyKey: "US-631",
     storyTitle: "Apply for a community food support grant",
     role: "community organisation coordinator",
@@ -742,7 +742,6 @@ export default function App() {
       ? [
           {
             id: "CONF-02",
-            node: "Node B",
             title: "Address evidence",
             transcript: "Residents type their address",
             process: "Process map requires a utility bill PDF upload",
@@ -750,7 +749,6 @@ export default function App() {
           },
           {
             id: "CONF-03",
-            node: "Node C",
             title: "Bank verification",
             transcript: "Verify instantly through Open Banking",
             process: "Process map requires a bank statement PDF upload",
@@ -825,7 +823,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
           !content.includes("latest signed accounts")
         ) {
           setUploadError(
-            "Choose the supplied Community_Food_Support_Transcript.txt example file.",
+            "This requirements file is not supported. Choose the provided .txt requirements file.",
           )
           return
         }
@@ -840,7 +838,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
         !content.includes("Task_AutoEligibility")
       ) {
         setUploadError(
-          "Choose the supplied Community_Food_Support_Flow.bpmn example file.",
+          "This process map is not supported. Choose the provided .bpmn process map file.",
         )
         return
       }
@@ -997,7 +995,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             <div className="min-w-0">
               <p className="text-sm font-bold">ReqBridge</p>
               <p className="truncate text-xs text-[var(--muted)]">
-                Accenture-inspired concept · {scenario.project}
+                {scenario.project}
               </p>
             </div>
           </div>
@@ -1039,7 +1037,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="font-display text-3xl font-semibold tracking-[-.035em] md:text-4xl">
-              Requirements workbench
+              ReqBridge
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)] md:text-base">
               Compare workshop evidence with process maps, resolve open
@@ -1098,21 +1096,20 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                 }.`}
         </p>
         <section
-          aria-labelledby="upload-example-title"
+          aria-labelledby="upload-title"
           className="mb-6 rounded-lg border border-[var(--line)] bg-white p-5 md:p-6"
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2
-                id="upload-example-title"
+                id="upload-title"
                 className="text-lg font-semibold md:text-xl"
               >
-                Load the Community Food Support example
+                Upload requirements and process map
               </h2>
               <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--muted)]">
-                This demo loads a fixed example when both matching files are
-                selected. The files are read in this browser and are not sent to
-                a server.
+                Add your requirements document and process map to prepare them
+                for review.
               </p>
             </div>
             <button
@@ -1129,10 +1126,10 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               className="cursor-pointer rounded-md border border-dashed border-[var(--line-strong)] bg-[var(--soft)] p-4 hover:border-[var(--blue)]"
             >
               <span className="block text-sm font-semibold">
-                Workshop transcript (.txt)
+                Requirements document (.txt)
               </span>
               <span className="mt-1 block truncate text-sm text-[var(--muted)]">
-                {uploadedTranscript?.name ?? "Choose the supplied transcript"}
+                {uploadedTranscript?.name ?? "Choose a requirements file"}
               </span>
               <input
                 id="transcript-upload"
@@ -1155,7 +1152,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                 Process map (.bpmn)
               </span>
               <span className="mt-1 block truncate text-sm text-[var(--muted)]">
-                {uploadedBpmn?.name ?? "Choose the supplied BPMN file"}
+                {uploadedBpmn?.name ?? "Choose a process map file"}
               </span>
               <input
                 id="bpmn-upload"
@@ -1186,14 +1183,13 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               className="rounded-lg bg-[var(--ink)] px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:bg-[var(--disabled)] disabled:text-[var(--muted)]"
             >
               {communityMealsUnlocked
-                ? "Load Community Food Support example"
+                ? "Continue to review"
                 : "Select both files to continue"}
             </button>
           </div>
           {communityMealsUnlocked && (
             <p role="status" className="mt-3 text-xs text-[var(--green-dark)]">
-              Both files are ready. The Community Food Support example is ready
-              to load from the workflow selector.
+              Both files are ready. Continue to review the workflow.
             </p>
           )}
         </section>
@@ -1211,7 +1207,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             />
             <SourceFile
               name={scenario.processFile}
-              meta={`${scenario.processSteps.length} nodes · ${gatewayCount} ${
+              meta={`${scenario.processSteps.length} steps · ${gatewayCount} ${
                 gatewayCount === 1 ? "gateway" : "gateways"
               }`}
               onClick={() => setSource("bpmn")}
@@ -1286,8 +1282,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       </p>
                       <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
                         Reason: the workshop account of {scenario.conflictTopic}{" "}
-                        differs from the process map at Node{" "}
-                        {scenario.conflictStep}.
+                        differs from the process map.
                       </p>
                     </div>
                     {resolved && (
@@ -1305,7 +1300,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       selected={resolved}
                     />
                     <Quote
-                      source={`Process flow · Node ${scenario.conflictStep}`}
+                      source="Process flow"
                       text={scenario.processQuote}
                       onClick={() => setSource("bpmn")}
                     />
@@ -1410,9 +1405,6 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                                 ? "Not an issue · Reviewer acknowledged"
                                 : "Warning · Needs review"}
                           </StatusPill>
-                          <span className="text-xs font-semibold text-[var(--muted)]">
-                            {conflict.node}
-                          </span>
                         </div>
                         <h3 className="mt-3 text-sm font-semibold">
                           {conflict.id}: {conflict.title}
@@ -1889,15 +1881,15 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               <div className="mt-8 space-y-3">
                 {scenarioId !== "rebate" && (
                   <p className="rounded-md border border-[var(--line)] bg-white p-3 text-sm leading-6 text-[var(--muted)]">
-                    Flow map: {scenario.processSteps.length} nodes.{" "}
+                    Process map: {scenario.processSteps.length} steps.{" "}
                     {resolved
-                      ? `Node ${scenario.conflictStep} reflects the selected decision.`
-                      : `The difference is at Node ${scenario.conflictStep}.`}
+                      ? "The selected decision is reflected in the process."
+                      : "The process differs from the workshop evidence."}
                   </p>
                 )}
                 {scenarioId === "rebate" && (
                   <p className="rounded-md border border-[var(--line)] bg-white p-3 text-sm leading-6 text-[var(--muted)]">
-                    Flow map: 7 nodes (A-G), 1 gateway (F).{" "}
+                    Process map: 7 steps and 1 decision point.{" "}
                     {resolved
                       ? "The agreed approval decision adds explicit value-based routing."
                       : "Current flow sends every claim through manual review."}
@@ -1952,9 +1944,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span>
-                          Node {step.id} · {label}
-                        </span>
+                        <span>{label}</span>
                         {nodeConflict && (
                           <StatusPill tone={resolved ? "green" : "red"}>
                             {resolved ? "Decision recorded" : "Conflict"}
@@ -1971,11 +1961,11 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           <div className="rounded-md border border-[var(--line)] bg-white p-2 text-xs">
                             {resolved && decision === "primary"
                               ? "≤ £500 → Auto-approve → queue payment (bypass E + G)"
-                              : "All claims → Review required → Node E → Node G"}
+                              : "All claims → Five-day caseworker check → Supervisor sign-off"}
                           </div>
                           {resolved && decision === "primary" && (
                             <div className="rounded-md border border-[var(--line)] bg-white p-2 text-xs">
-                              &gt; £500 → Node E (5-day check) → Node G
+                              &gt; £500 → Five-day caseworker check →
                               (supervisor)
                             </div>
                           )}
