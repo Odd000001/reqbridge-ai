@@ -8,31 +8,29 @@
 }
 
 :root {
-  --canvas: #ffffff;
-  --soft: #f8f9fa;
-  --disabled: #dce0de;
-  --line: #e5e7eb;
-  --line-strong: #cbd0cd;
-  --ink: #111827;
-  --muted: #65706a;
-  --code-ink: #33423a;
-  --code-bg: #f8faf8;
-  --red: #c8483e;
-  --red-soft: #fff5f3;
-  --red-border: #e9a9a3;
-  --amber: #d38b18;
-  --amber-dark: #8b5a0a;
-  --amber-soft: #fff9ec;
-  --amber-border: #ecd39d;
-  --green: #249366;
-  --green-dark: #176747;
-  --green-soft: #eef9f4;
-  --green-border: #98d1b9;
-  --blue: #316b8c;
-  --blue-soft: #edf6fa;
-  --blue-border: #a9cbdc;
-  --violet: #735a9a;
-  --violet-soft: #f3eff9;
+  --canvas: #f7f6f8;
+  --soft: #f0edf3;
+  --disabled: #e4e0e8;
+  --line: #e2dee6;
+  --line-strong: #c9c2d0;
+  --ink: #201b24;
+  --muted: #625a69;
+  --code-ink: #30243c;
+  --code-bg: #f5f2f7;
+  --red: #b43e35;
+  --red-soft: #fff;
+  --red-border: #d5ded7;
+  --amber: #a96810;
+  --amber-dark: #79500f;
+  --amber-soft: #fff;
+  --amber-border: #d5ded7;
+  --green: #a100ff;
+  --green-dark: #7500bd;
+  --green-soft: #fff;
+  --green-border: #e2c7f5;
+  --blue: #7500bd;
+  --blue-soft: #fff;
+  --blue-border: #e2c7f5;
 }
 
 @layer base {
@@ -47,6 +45,7 @@
     background: var(--canvas);
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
+    color: var(--ink);
   }
 
   button {
@@ -58,12 +57,12 @@
   }
 
   button:focus-visible {
-    outline: 2px solid var(--blue);
+    outline: 2px solid var(--green);
     outline-offset: 3px;
   }
 
   ::selection {
-    background: var(--green-border);
+    background: #e2c7f5;
     color: var(--ink);
   }
 }
@@ -73,51 +72,46 @@
 }
 
 .tone-red {
-  border-color: var(--red-border);
+  border-color: var(--line);
   border-left-color: var(--red);
-  background: var(--red-soft);
+  background: #fff;
 }
 
 .tone-amber {
-  border-color: var(--amber-border);
+  border-color: var(--line);
   border-left-color: var(--amber);
-  background: var(--amber-soft);
+  background: #fff;
 }
 
 .tone-blue {
-  border-color: var(--blue-border);
+  border-color: var(--line);
   border-left-color: var(--blue);
-  background: var(--blue-soft);
+  background: #fff;
 }
 
 .tone-green {
   border-color: var(--line);
   border-left-color: var(--green);
-  background: var(--soft);
+  background: #fff;
 }
 
 .pill-red {
-  background: #fbe3e0;
-  color: #9e3029;
+  color: var(--red);
 }
 
 .pill-amber {
-  background: #f8e9c8;
   color: var(--amber-dark);
 }
 
 .pill-blue {
-  background: #dcecf3;
   color: var(--blue);
 }
 
 .pill-green {
-  background: #d8f0e5;
   color: var(--green-dark);
 }
 
 .pill-neutral {
-  background: var(--soft);
   color: var(--muted);
 }
 

@@ -792,23 +792,6 @@ _Source decision: CONF-01 · ${decisionDescription}._`
       ? exportText
       : `# Azure DevOps · User Story\n\n${exportText.replace(`## ${activeStory.key}`, `## Title: ${activeStory.key}`)}`
 
-  const resetWorkspace = () => {
-    setResolved(false)
-    setApplying(false)
-    setReadiness(78)
-    setTab(0)
-    setStoryIndex(0)
-    setSource(null)
-    setPolicyOpen(false)
-    setAmbiguity("Unconfirmed")
-    setDecision("primary")
-    setDecisionTime("")
-    setMinorResolutions({})
-    setModalOpen(false)
-    setCopied(false)
-    setFormat("Jira")
-  }
-
   const changeScenario = (nextScenario: ScenarioId) => {
     setScenarioId(nextScenario)
     setResolved(false)
@@ -1000,22 +983,29 @@ _Source decision: CONF-01 · ${decisionDescription}._`
       <header className="border-b border-[var(--line)] bg-white">
         <div className="mx-auto flex max-w-[1480px] items-center justify-between px-5 py-4 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--ink)] text-xs font-bold text-white">
-              R
-            </div>
-            <div className="flex min-w-0 items-center gap-2 text-sm">
-              <span className="truncate font-bold">ReqBridge</span>
-              <span className="text-[var(--line-strong)]">/</span>
-              <span className="truncate text-[var(--muted)]">
-                {scenario.project}
+            <div className="flex shrink-0 items-center gap-2 border-r border-[var(--line)] pr-3">
+              <span className="relative text-lg font-bold tracking-[-.06em] text-[var(--ink)]">
+                accenture
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-2 -top-1 text-base font-bold text-[var(--green)]"
+                >
+                  &gt;
+                </span>
               </span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold">ReqBridge</p>
+              <p className="truncate text-xs text-[var(--muted)]">
+                Accenture-inspired concept · {scenario.project}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setModalOpen(true)}
               disabled={!canExport}
-              className="disabled:bg-[var(--disabled)] disabled:text-[var(--muted)] hidden items-center gap-2 rounded-lg bg-[var(--ink)] px-4 py-2.5 text-xs font-bold text-white transition hover:opacity-90 md:flex"
+              className="hidden items-center gap-2 rounded-md bg-[var(--ink)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--green-dark)] disabled:bg-[var(--disabled)] disabled:text-[var(--muted)] md:flex"
             >
               Export to Jira <Icon name="arrow" className="size-3.5" />
             </button>
@@ -1023,69 +1013,79 @@ _Source decision: CONF-01 · ${decisionDescription}._`
         </div>
       </header>
 
-      <div className="border-b border-[var(--line)] bg-white">
-        <div className="mx-auto flex max-w-[1480px] items-center gap-2 overflow-x-auto px-5 py-3 text-[11px] font-semibold lg:px-8">
-          <span className="mr-3 shrink-0 tracking-[.12em] text-[var(--muted)]">
-            DELIVERY WORKFLOW
-          </span>
-          <Step label="Ingest & extract" number="1" state="done" />
-          <span className="text-[var(--line-strong)]">·</span>
+      <div className="border-b border-[var(--line)] bg-[var(--soft)]">
+        <div className="mx-auto grid max-w-[1480px] grid-cols-2 gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-3 lg:grid-cols-5 lg:px-8">
+          <Step label="Ingest and extract" state="done" />
+          <Step label="Check evidence" state="done" detail="2 checks" />
+          <Step label="Draft story" state="done" />
           <Step
-            label="Audit & policy"
-            number="2"
-            state="done"
-            detail="2 checks"
-          />
-          <span className="text-[var(--line-strong)]">·</span>
-          <Step label="Story draft" number="3" state="done" />
-          <span className="text-[var(--line-strong)]">·</span>
-          <Step
-            label="Human triage"
-            number="4"
+            label="Review decisions"
             state={resolved ? "done" : "active"}
             detail={
               resolved
-                ? `1 blocker resolved · ${reviewedMinorCount}/${minorConflicts.length} warnings reviewed`
-                : `1 blocker · ${minorConflicts.length} warnings`
+                ? `1 blocker resolved, ${reviewedMinorCount}/${minorConflicts.length} warnings reviewed`
+                : `1 blocker, ${minorConflicts.length} warnings`
             }
           />
-          <span className="text-[var(--line-strong)]">·</span>
           <Step
-            label="Backlog export"
-            number="5"
+            label="Prepare export"
             state={canExport ? "done" : "locked"}
-            detail={canExport ? "Ready" : "Gated"}
+            detail={canExport ? "Ready" : "Waiting"}
           />
-          <span className="ml-auto hidden shrink-0 items-center gap-1.5 text-[var(--green-dark)] md:flex">
-            <Icon name={canExport ? "check" : "clock"} className="size-3.5" />{" "}
-            {applying
-              ? "Recording decision"
-              : canExport
-                ? "Ready for delivery export"
-                : !ambiguityConfirmed && resolved
-                  ? "Clarification required"
-                  : resolved
-                    ? "Readiness recalculating"
-                    : "Human review required"}
-          </span>
         </div>
       </div>
 
-      <main className="mx-auto max-w-[1480px] px-5 py-8 lg:px-8">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <span className="font-semibold text-[var(--muted)]">
-            WORKSPACE STATUS ·{" "}
-            {resolved
-              ? "02 / Decision verified"
-              : "01 / Source conflict detected"}
-          </span>
-          <div className="flex flex-wrap gap-4">
-            <button
-              onClick={resetWorkspace}
-              className="font-semibold text-[var(--muted)]"
+      <main className="mx-auto max-w-[1480px] px-5 py-7 lg:px-8">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-semibold tracking-[-.035em] md:text-4xl">
+              Requirements workbench
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)] md:text-base">
+              Compare workshop evidence with process maps, resolve open
+              questions, and prepare clear backlog stories.
+            </p>
+          </div>
+          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-64">
+            <label
+              className="text-xs font-semibold text-[var(--muted)]"
+              htmlFor="scenario-select"
             >
-              Reset workspace
-            </button>
+              Current example
+            </label>
+            <select
+              id="scenario-select"
+              value={scenarioId}
+              disabled={
+                scenarioId === "communityMeals" && !communityMealsUnlocked
+              }
+              onChange={(event) => {
+                const nextScenario = event.target.value as ScenarioId
+                if (nextScenario in scenarios) changeScenario(nextScenario)
+              }}
+              className="w-full rounded-md border border-[var(--line-strong)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--ink)] focus:ring-2 focus:ring-[var(--blue)]"
+            >
+              <option value="rebate">Council Tax Rebate</option>
+              <option value="repairs">Housing Repairs</option>
+              <option value="blueBadge">Blue Badge Applications</option>
+              <option value="schoolAdmissions">School Admissions</option>
+              <option value="wasteCollection">Missed Waste Collections</option>
+              {communityMealsUnlocked && (
+                <option value="communityMeals">Community Food Support</option>
+              )}
+            </select>
+            <span
+              className={`flex items-center gap-2 text-xs font-semibold ${
+                canExport ? "text-[var(--green-dark)]" : "text-[var(--muted)]"
+              }`}
+            >
+              <span
+                className={`size-2 rounded-full ${
+                  canExport ? "bg-[var(--green)]" : "bg-[var(--amber)]"
+                }`}
+              />
+              {canExport ? "Ready to export" : "Review required"}
+            </span>
           </div>
         </div>
         <p role="status" className="sr-only">
@@ -1097,64 +1097,17 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   canExport ? "available" : "locked"
                 }.`}
         </p>
-        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[.16em] text-[var(--blue)]">
-              Requirements to delivery
-            </p>
-            <h1 className="font-display text-3xl font-semibold tracking-[-.03em] md:text-4xl">
-              Review evidence. Resolve differences. Prepare backlog stories.
-            </h1>
-            <p className="mt-2 text-sm text-[var(--muted)]">
-              Check each decision against its source before preparing the
-              backlog story.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 self-start rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs text-[var(--muted)] md:self-auto">
-            <label className="sr-only" htmlFor="scenario-select">
-              Choose a workflow example
-            </label>
-            <select
-              id="scenario-select"
-              value={scenarioId}
-              onChange={(event) => {
-                const nextScenario = event.target.value as ScenarioId
-                if (nextScenario in scenarios) changeScenario(nextScenario)
-              }}
-              className="max-w-[230px] rounded-md border-0 bg-transparent py-1 text-xs font-semibold text-[var(--ink)] focus:ring-2 focus:ring-[var(--blue)]"
-            >
-              <option value="rebate">Council Tax Rebate</option>
-              <option value="repairs">Housing Repairs</option>
-              <option value="blueBadge">Blue Badge Applications</option>
-              <option value="schoolAdmissions">School Admissions</option>
-              <option value="wasteCollection">Missed Waste Collections</option>
-              {communityMealsUnlocked && (
-                <option value="communityMeals">Community Food Support</option>
-              )}
-            </select>
-            <span className="text-[var(--line-strong)]">/</span>{" "}
-            {canExport
-              ? "Ready to export"
-              : resolved && !ambiguityConfirmed
-                ? "Clarification needed"
-                : "Working draft"}
-          </div>
-        </div>
-
         <section
           aria-labelledby="upload-example-title"
-          className="mb-6 rounded-2xl border border-[var(--line)] bg-white p-5 md:p-6"
+          className="mb-6 rounded-lg border border-[var(--line)] bg-white p-5 md:p-6"
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[var(--blue)]">
-                Try another example
-              </p>
               <h2
                 id="upload-example-title"
-                className="mt-1 text-lg font-semibold"
+                className="text-lg font-semibold md:text-xl"
               >
-                Upload transcript and process map to load Community Food Support
+                Load the Community Food Support example
               </h2>
               <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--muted)]">
                 This demo loads a fixed example when both matching files are
@@ -1173,12 +1126,12 @@ _Source decision: CONF-01 · ${decisionDescription}._`
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <label
               htmlFor="transcript-upload"
-              className="cursor-pointer rounded-xl border border-dashed border-[var(--line-strong)] bg-[var(--soft)] p-4 hover:border-[var(--blue)]"
+              className="cursor-pointer rounded-md border border-dashed border-[var(--line-strong)] bg-[var(--soft)] p-4 hover:border-[var(--blue)]"
             >
-              <span className="block text-xs font-semibold">
-                1. Workshop transcript (.txt)
+              <span className="block text-sm font-semibold">
+                Workshop transcript (.txt)
               </span>
-              <span className="mt-1 block truncate text-xs text-[var(--muted)]">
+              <span className="mt-1 block truncate text-sm text-[var(--muted)]">
                 {uploadedTranscript?.name ?? "Choose the supplied transcript"}
               </span>
               <input
@@ -1196,12 +1149,12 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             </label>
             <label
               htmlFor="bpmn-upload"
-              className="cursor-pointer rounded-xl border border-dashed border-[var(--line-strong)] bg-[var(--soft)] p-4 hover:border-[var(--blue)]"
+              className="cursor-pointer rounded-md border border-dashed border-[var(--line-strong)] bg-[var(--soft)] p-4 hover:border-[var(--blue)]"
             >
-              <span className="block text-xs font-semibold">
-                2. Process map (.bpmn)
+              <span className="block text-sm font-semibold">
+                Process map (.bpmn)
               </span>
-              <span className="mt-1 block truncate text-xs text-[var(--muted)]">
+              <span className="mt-1 block truncate text-sm text-[var(--muted)]">
                 {uploadedBpmn?.name ?? "Choose the supplied BPMN file"}
               </span>
               <input
@@ -1245,10 +1198,10 @@ _Source decision: CONF-01 · ${decisionDescription}._`
           )}
         </section>
 
-        <div className="grid gap-5 lg:grid-cols-[250px_minmax(430px,1fr)_minmax(340px,.85fr)]">
-          <aside className="rounded-2xl border border-[var(--line)] bg-white p-5">
-            <SectionLabel number="01" label="Provenance" />
-            <p className="mt-7 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
+        <div className="grid items-start gap-4 md:grid-cols-[minmax(190px,.72fr)_minmax(0,1.28fr)] xl:grid-cols-[260px_minmax(430px,1.1fr)_minmax(320px,.9fr)] xl:gap-5">
+          <aside className="rounded-lg border border-[var(--line)] bg-white p-4 md:p-5">
+            <SectionLabel label="Sources and scope" />
+            <p className="mt-5 text-sm font-semibold">
               Source material · 2 files
             </p>
             <SourceFile
@@ -1264,9 +1217,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               onClick={() => setSource("bpmn")}
             />
             <div className="my-5 border-t border-[var(--line)]" />
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
-              Extracted directory
-            </p>
+            <p className="mb-2 text-sm font-semibold">Extracted directory</p>
             <DirectoryItem
               icon="users"
               title="Actors"
@@ -1287,12 +1238,12 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             />
           </aside>
 
-          <section>
-            <div className="rounded-2xl border border-[var(--line)] bg-white p-5 md:p-6">
+          <section className="min-w-0">
+            <div className="rounded-lg border border-[var(--line)] bg-white p-4 md:p-5">
               <div className="flex items-center justify-between">
-                <SectionLabel number="02" label="Triage workbench" />
+                <SectionLabel label="Evidence review" />
               </div>
-              <div className="mt-5 flex gap-1 overflow-x-auto border-b border-[var(--line)] text-xs">
+              <div className="mt-4 grid grid-cols-2 gap-1 rounded-md bg-[var(--soft)] p-1 text-xs sm:grid-cols-4">
                 {[
                   `All (${totalIssueCount})`,
                   `Conflicts (${totalConflictCount})`,
@@ -1303,10 +1254,10 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                     key={label}
                     onClick={() => setTab(index)}
                     aria-pressed={index === tab}
-                    className={`shrink-0 border-b-2 px-3 py-3 font-semibold ${
+                    className={`min-w-0 rounded px-2 py-2.5 text-center font-semibold transition-colors ${
                       index === tab
-                        ? "border-[var(--ink)] text-[var(--ink)]"
-                        : "border-transparent text-[var(--muted)]"
+                        ? "bg-white text-[var(--ink)]"
+                        : "text-[var(--muted)] hover:text-[var(--ink)]"
                     }`}
                   >
                     {label}
@@ -1333,16 +1284,17 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           ? `${decisionDescription} adopted as the agreed rule. Process flow step updated.`
                           : `The sources disagree about ${scenario.conflictTopic}. Choose the governing rule.`}
                       </p>
-                      <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
+                      <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
                         Reason: the workshop account of {scenario.conflictTopic}{" "}
                         differs from the process map at Node{" "}
                         {scenario.conflictStep}.
                       </p>
                     </div>
                     {resolved && (
-                      <div className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--green)] text-white">
-                        <Icon name="check" />
-                      </div>
+                      <Icon
+                        name="check"
+                        className="mt-1 size-5 shrink-0 text-[var(--green)]"
+                      />
                     )}
                   </div>
                   <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -1366,7 +1318,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           setDecision("primary")
                           setApplying(true)
                         }}
-                        className="rounded-lg bg-[var(--red)] px-3.5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-[var(--red)] focus:ring-offset-2"
+                        className="rounded-md bg-[var(--ink)] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--green-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--green)] focus:ring-offset-2"
                       >
                         {applying
                           ? "Recording decision…"
@@ -1417,7 +1369,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           </button>
                         ))}
                       </div>
-                      <details className="mt-3 text-[11px] text-[var(--green-dark)]">
+                      <details className="mt-3 text-xs text-[var(--green-dark)]">
                         <summary className="cursor-pointer font-semibold">
                           Decision audit · Product Owner · {decisionTime}
                         </summary>
@@ -1458,7 +1410,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                                 ? "Not an issue · Reviewer acknowledged"
                                 : "Warning · Needs review"}
                           </StatusPill>
-                          <span className="text-[10px] font-semibold text-[var(--muted)]">
+                          <span className="text-xs font-semibold text-[var(--muted)]">
                             {conflict.node}
                           </span>
                         </div>
@@ -1469,7 +1421,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           Transcript: “{conflict.transcript}.” Process map: “
                           {conflict.process}.”
                         </p>
-                        <p className="mt-2 text-[11px] text-[var(--muted)]">
+                        <p className="mt-2 text-xs text-[var(--muted)]">
                           Reason: {conflict.why}
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -1531,7 +1483,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   <p className="mt-1 text-sm text-[var(--muted)]">
                     Evidence: {scenario.ambiguityEvidence}
                   </p>
-                  <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
+                  <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
                     Reason: the source does not define a testable threshold.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -1565,7 +1517,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           : `Confirm ${option}`}
                       </button>
                     ))}
-                    <span className="ml-auto self-center text-[11px] font-semibold text-[var(--amber-dark)]">
+                    <span className="ml-auto self-center text-xs font-semibold text-[var(--amber-dark)]">
                       {!ambiguityConfirmed
                         ? ambiguity === "Clarify"
                           ? "Clarification requested · export blocked"
@@ -1586,7 +1538,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               {(tab === 0 || tab === 3) && (
                 <IssueCard tone="blue">
                   <div className="flex items-start gap-3">
-                    <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--blue-soft)] text-[var(--blue)]">
+                    <div className="grid size-8 shrink-0 place-items-center text-[var(--blue)]">
                       <Icon name="shield" />
                     </div>
                     <div>
@@ -1648,7 +1600,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                 <>
                   <IssueCard tone="blue">
                     <div className="flex items-start gap-3">
-                      <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--blue-soft)] text-[var(--blue)]">
+                      <div className="grid size-8 shrink-0 place-items-center text-[var(--blue)]">
                         <Icon name="users" />
                       </div>
                       <div>
@@ -1662,7 +1614,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           Keyboard-operable forms, labelled controls, screen
                           reader announcements, and sufficient contrast.
                         </p>
-                        <p className="mt-2 text-[11px] text-[var(--muted)]">
+                        <p className="mt-2 text-xs text-[var(--muted)]">
                           Why included: residents use this service, including
                           people who rely on assistive technology.
                         </p>
@@ -1674,16 +1626,16 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             </div>
           </section>
 
-          <aside className="space-y-5">
+          <aside className="space-y-4 md:col-span-2 xl:col-span-1">
             <div
-              className={`overflow-hidden rounded-2xl border bg-white transition-colors duration-500 ${
+              className={`overflow-hidden rounded-lg border bg-white transition-colors duration-500 ${
                 canExport
                   ? "border-[var(--green-border)]"
                   : "border-[var(--line)]"
               }`}
             >
               <div className="p-5 md:p-6">
-                <SectionLabel number="03" label="Story & BDD" />
+                <SectionLabel label="User story and criteria" />
                 <div className="mt-7 flex items-end justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
@@ -1705,37 +1657,6 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       <span className="ml-1 text-xl">%</span>
                     </div>
                   </div>
-                  <div className="relative size-20">
-                    <svg viewBox="0 0 80 80" className="-rotate-90">
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="34"
-                        fill="none"
-                        stroke="var(--soft)"
-                        strokeWidth="7"
-                      />
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="34"
-                        fill="none"
-                        stroke={canExport ? "var(--green)" : "var(--amber)"}
-                        strokeWidth="7"
-                        strokeLinecap="round"
-                        strokeDasharray={`${readiness * 2.136} 214`}
-                        className="transition-all duration-700"
-                      />
-                    </svg>
-                    <Icon
-                      name={canExport ? "check" : "clock"}
-                      className={`absolute left-1/2 top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 ${
-                        canExport
-                          ? "text-[var(--green)]"
-                          : "text-[var(--amber)]"
-                      }`}
-                    />
-                  </div>
                 </div>
                 <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
                   {!resolved
@@ -1744,7 +1665,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       ? `The decision is recorded, but ${scenario.ambiguityTitle.toLowerCase()} must be confirmed. Readiness is capped at 88%.`
                       : `All blockers cleared. Export unlocks at 85%; readiness is ${readiness}%.`}
                 </p>
-                <details className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--soft)] p-3 text-xs">
+                <details className="mt-4 rounded-md bg-[var(--soft)] p-4 text-sm">
                   <summary className="cursor-pointer font-semibold">
                     Why {readiness}%? · View score breakdown
                   </summary>
@@ -1769,7 +1690,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       <span>Product Owner ambiguity confirmation</span>
                       <span>{ambiguityConfirmed ? "16 / 16" : "10 / 16"}</span>
                     </li>
-                    <li className="flex justify-between gap-3 border-t border-[var(--line)] pt-2">
+                    <li className="flex justify-between gap-3 pt-2">
                       <span>Estimate not supplied</span>
                       <span>0 / 6</span>
                     </li>
@@ -1793,8 +1714,8 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               <div className="border-t border-[var(--line)] p-5 md:p-6">
                 {storyOptions.length > 1 && (
                   <div className="mb-5">
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
-                      INVEST-sized story set · {storyOptions.length} stories
+                    <p className="mb-3 text-sm font-semibold text-[var(--ink)]">
+                      Story set · {storyOptions.length} stories
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {storyOptions.map((story, index) => (
@@ -1802,13 +1723,15 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           key={story.key}
                           onClick={() => setStoryIndex(index)}
                           aria-pressed={storyIndex === index}
-                          className={`rounded-lg border px-3 py-2 text-left text-xs font-semibold ${
+                          className={`rounded-md border px-3 py-2 text-left text-sm font-semibold ${
                             storyIndex === index
                               ? "border-[var(--ink)] bg-[var(--ink)] text-white"
                               : "border-[var(--line)] bg-white text-[var(--muted)]"
                           }`}
                         >
-                          <span className="block font-mono">{story.key}</span>
+                          <span className="block text-xs text-[var(--muted)]">
+                            {story.key}
+                          </span>
                           <span className="mt-1 block">{story.title}</span>
                         </button>
                       ))}
@@ -1816,7 +1739,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   </div>
                 )}
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-xs font-bold text-[var(--blue)]">
+                  <span className="text-xs font-semibold text-[var(--muted)]">
                     {activeStory.key}
                   </span>
                   <StatusPill tone={canExport ? "green" : "neutral"}>
@@ -1834,16 +1757,16 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   <strong className="text-[var(--ink)]">so that</strong>{" "}
                   {activeStory.benefit}.
                 </p>
-                <p className="mt-5 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
+                <p className="mt-5 text-sm font-semibold">
                   Acceptance criteria · BDD
                 </p>
                 <div className="mt-3 space-y-3">
                   {activeStory.acceptance.map((acceptance, index) => (
                     <div
                       key={`${activeStory.key}-scenario-${index}`}
-                      className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--code-bg)] font-mono text-[11px] leading-5"
+                      className="overflow-hidden rounded-md bg-[var(--soft)] text-sm leading-6"
                     >
-                      <div className="border-b border-[var(--line)] px-3 py-2 text-[10px] font-bold uppercase tracking-[.1em] text-[var(--muted)]">
+                      <div className="px-3 py-2 text-xs font-semibold text-[var(--muted)]">
                         Scenario {index + 1}
                       </div>
                       <Criteria label="Given" value={acceptance.given} />
@@ -1857,12 +1780,12 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   ))}
                 </div>
                 {resolved && ambiguityConfirmed && (
-                  <div className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[var(--green-dark)]">
+                  <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-[var(--green-dark)]">
                     <Icon name="check" className="size-3.5" /> Acceptance
                     criteria reflect this decision
                   </div>
                 )}
-                <p className="mt-5 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
+                <p className="mt-5 text-sm font-semibold">
                   Attached requirements
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -1876,7 +1799,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                 <button
                   disabled={!canExport}
                   onClick={() => setModalOpen(true)}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ink)] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:bg-[var(--disabled)] disabled:text-[var(--muted)] disabled:shadow-none"
+                  className="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--ink)] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--green-dark)] disabled:cursor-not-allowed disabled:bg-[var(--disabled)] disabled:text-[var(--muted)]"
                 >
                   <span>Export Story</span>
                   <span className="ml-auto flex items-center gap-2 text-xs font-semibold text-white/70">
@@ -1884,7 +1807,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   </span>
                 </button>
                 {!canExport && (
-                  <p className="mt-2 text-center text-[10px] text-[var(--muted)]">
+                  <p className="mt-2 text-center text-xs text-[var(--muted)]">
                     {!resolved
                       ? `Resolve the ${scenario.conflictTitle.toLowerCase()} to enable export`
                       : !ambiguityConfirmed
@@ -1899,8 +1822,8 @@ _Source decision: CONF-01 · ${decisionDescription}._`
       </main>
 
       <footer className="mt-8 border-t border-[var(--line)] bg-white">
-        <div className="mx-auto flex max-w-[1480px] flex-col justify-between gap-2 px-5 py-5 text-[11px] text-[var(--muted)] sm:flex-row lg:px-8">
-          <span>Source-linked decisions. Auditable by design.</span>
+        <div className="mx-auto flex max-w-[1480px] flex-col justify-between gap-2 px-5 py-5 text-xs text-[var(--muted)] sm:flex-row lg:px-8">
+          <span>Source-linked decisions and a clear review trail.</span>
           <span className="flex items-center gap-1.5">
             <span className="size-1.5 rounded-full bg-[var(--green)]" />{" "}
             Workspace changes · session only
@@ -1910,7 +1833,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
 
       {source && (
         <div
-          className="fixed inset-0 z-[60] flex justify-end bg-[rgba(15,23,42,.35)] backdrop-blur-sm"
+          className="fixed inset-0 z-[60] flex justify-end bg-[rgba(15,23,42,.35)]"
           onMouseDown={(event) =>
             event.target === event.currentTarget && setSource(null)
           }
@@ -1923,9 +1846,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--blue)]">
-                  Source-linked evidence · Example workspace
-                </p>
+                <p className="text-sm text-[var(--muted)]">Example workspace</p>
                 <h2 id="source-title" className="mt-3 text-xl font-semibold">
                   {source === "transcript"
                     ? scenario.transcriptFile
@@ -1952,14 +1873,14 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                     key={entry}
                     className={
                       index === scenario.conflictTranscriptIndex
-                        ? "rounded-xl border-l-4 border-[var(--amber)] bg-[var(--amber-soft)] p-4 text-[var(--ink)]"
+                        ? "rounded-md border-l-4 border-[var(--amber)] bg-[var(--amber-soft)] p-4 text-[var(--ink)]"
                         : ""
                     }
                   >
                     {entry}
                   </p>
                 ))}
-                <p className="border-t border-[var(--line)] pt-4 text-xs">
+                <p className="border-t border-[var(--line)] pt-4 text-sm">
                   Example evidence for {scenario.storyKey}. Review the conflict
                   and confirm the governing rule before export.
                 </p>
@@ -1967,7 +1888,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             ) : source === "bpmn" ? (
               <div className="mt-8 space-y-3">
                 {scenarioId !== "rebate" && (
-                  <p className="rounded-lg bg-[var(--blue-soft)] p-3 text-xs leading-5 text-[var(--blue)]">
+                  <p className="rounded-md border border-[var(--line)] bg-white p-3 text-sm leading-6 text-[var(--muted)]">
                     Flow map: {scenario.processSteps.length} nodes.{" "}
                     {resolved
                       ? `Node ${scenario.conflictStep} reflects the selected decision.`
@@ -1975,7 +1896,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   </p>
                 )}
                 {scenarioId === "rebate" && (
-                  <p className="rounded-lg bg-[var(--blue-soft)] p-3 text-xs leading-5 text-[var(--blue)]">
+                  <p className="rounded-md border border-[var(--line)] bg-white p-3 text-sm leading-6 text-[var(--muted)]">
                     Flow map: 7 nodes (A-G), 1 gateway (F).{" "}
                     {resolved
                       ? "The agreed approval decision adds explicit value-based routing."
@@ -2020,7 +1941,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   return (
                     <div
                       key={step.id}
-                      className={`rounded-xl border p-4 text-sm ${
+                      className={`rounded-md border p-4 text-sm ${
                         nodeConflict
                           ? resolved
                             ? "border-[var(--green-border)] bg-[var(--green-soft)]"
@@ -2124,7 +2045,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
 
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[rgba(15,23,42,.54)] p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[rgba(15,23,42,.54)] p-4"
           onMouseDown={(event) =>
             event.target === event.currentTarget && setModalOpen(false)
           }
@@ -2133,15 +2054,15 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             role="dialog"
             aria-modal="true"
             aria-labelledby="export-title"
-            className="my-8 w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="my-8 w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-xl"
           >
             <div className="flex items-start justify-between border-b border-[var(--line)] p-5 md:p-6">
               <div className="flex gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--green-soft)] text-[var(--green-dark)]">
+                <div className="grid size-10 shrink-0 place-items-center text-[var(--green-dark)]">
                   <Icon name="check" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[var(--green-dark)]">
+                  <p className="text-sm font-semibold text-[var(--green-dark)]">
                     {canExport
                       ? "Ready to export"
                       : resolved && !ambiguityConfirmed
@@ -2184,12 +2105,12 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   </button>
                 ))}
               </div>
-              <div className="max-h-[48vh] overflow-auto rounded-xl border border-[var(--line)] bg-[var(--code-bg)]">
+              <div className="max-h-[48vh] overflow-auto rounded-md border border-[var(--line)] bg-[var(--code-bg)]">
                 <div className="sticky top-0 flex items-center justify-between border-b border-[var(--line)] bg-[var(--code-bg)] px-4 py-3">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[var(--muted)]">
+                  <span className="font-mono text-xs font-semibold text-[var(--muted)]">
                     {format} Markdown preview
                   </span>
-                  <span className="rounded-full border border-[var(--green-border)] bg-[var(--green-soft)] px-2 py-1 text-[10px] font-bold text-[var(--green-dark)]">
+                  <span className="text-xs font-semibold text-[var(--green-dark)]">
                     Validated
                   </span>
                 </div>
@@ -2201,13 +2122,13 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             <div className="flex flex-col-reverse gap-2 border-t border-[var(--line)] bg-[var(--soft)] p-4 sm:flex-row sm:justify-end">
               <button
                 onClick={downloadExport}
-                className="flex items-center justify-center gap-2 rounded-xl border border-[var(--line-strong)] bg-white px-4 py-3 text-sm font-bold hover:bg-[var(--canvas)]"
+                className="flex items-center justify-center gap-2 rounded-md border border-[var(--line-strong)] bg-white px-4 py-3 text-sm font-semibold hover:bg-[var(--canvas)]"
               >
                 <Icon name="download" /> Download JSON
               </button>
               <button
                 onClick={copyExport}
-                className="flex items-center justify-center gap-2 rounded-xl bg-[var(--ink)] px-4 py-3 text-sm font-bold text-white hover:opacity-90"
+                className="flex items-center justify-center gap-2 rounded-md bg-[var(--ink)] px-4 py-3 text-sm font-semibold text-white hover:bg-[var(--green-dark)]"
               >
                 <Icon name={copied ? "check" : "copy"} />{" "}
                 {copied ? "Copied" : "Copy to clipboard"}
@@ -2222,55 +2143,50 @@ _Source decision: CONF-01 · ${decisionDescription}._`
 
 function Step({
   label,
-  number,
   state,
   detail,
 }: {
   label: string
-  number: string
   state: "done" | "active" | "locked"
   detail?: string
 }) {
   return (
     <span
-      className={`flex shrink-0 items-center gap-1.5 ${
+      className={`flex min-w-0 items-center gap-2 text-xs ${
         state === "active" ? "text-[var(--ink)]" : "text-[var(--muted)]"
       }`}
     >
       <span
-        className={`grid size-4 place-items-center rounded-full text-[9px] ${
+        className={`grid size-6 shrink-0 place-items-center rounded-full ${
           state === "done"
-            ? "bg-[var(--green-soft)] text-[var(--green-dark)]"
+            ? "bg-[var(--green)] text-white"
             : state === "active"
               ? "bg-[var(--ink)] text-white"
-              : "bg-[var(--soft)]"
+              : "bg-white text-[var(--muted)]"
         }`}
       >
         {state === "done" ? (
-          <Icon name="check" className="size-2.5" />
+          <Icon name="check" className="size-3" />
         ) : state === "locked" ? (
-          <Icon name="lock" className="size-2.5" />
+          <Icon name="lock" className="size-3" />
         ) : (
-          number
+          <Icon name="clock" className="size-3" />
         )}
       </span>
-      {label}
-      {detail && (
-        <span className="ml-0.5 font-normal text-[var(--muted)]">
-          ({detail})
-        </span>
-      )}
+      <span className="min-w-0">
+        <span className="block truncate font-semibold">{label}</span>
+        {detail && (
+          <span className="mt-0.5 block truncate text-xs font-normal text-[var(--muted)]">
+            {detail}
+          </span>
+        )}
+      </span>
     </span>
   )
 }
 
-function SectionLabel({ number, label }: Record<"number" | "label", string>) {
-  return (
-    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.13em]">
-      <span className="font-mono text-[var(--blue)]">{number}</span>
-      <span className="text-[var(--muted)]">{label}</span>
-    </div>
-  )
+function SectionLabel({ label }: { label: string }) {
+  return <h2 className="text-base font-semibold text-[var(--ink)]">{label}</h2>
 }
 
 function SourceFile({
@@ -2285,17 +2201,18 @@ function SourceFile({
   return (
     <button
       onClick={onClick}
-      className="mt-3 flex w-full items-center gap-3 rounded-lg py-2 text-left hover:bg-[var(--soft)]"
+      className="mt-2 flex w-full items-center gap-3 rounded-md py-2 text-left hover:bg-[var(--soft)] focus-visible:outline"
     >
-      <div className="relative grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--soft)] text-[var(--ink)]">
-        <Icon name="file" className="size-4" />
-        <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-[var(--green)] text-white ring-2 ring-white">
-          <Icon name="check" className="size-2.5" />
-        </span>
+      <div className="relative grid size-8 shrink-0 place-items-center text-[var(--green-dark)]">
+        <Icon name="file" className="size-5" />
+        <Icon
+          name="check"
+          className="absolute -right-1 -top-1 size-3 rounded-full bg-white"
+        />
       </div>
       <div className="min-w-0">
         <p className="truncate text-xs font-semibold">{name}</p>
-        <p className="mt-0.5 text-[10px] text-[var(--muted)]">{meta}</p>
+        <p className="mt-0.5 text-xs text-[var(--muted)]">{meta}</p>
       </div>
     </button>
   )
@@ -2321,11 +2238,9 @@ function DirectoryItem({
       <div className="min-w-0 flex-1">
         <div className="flex justify-between text-xs font-semibold">
           <span>{title}</span>
-          <span className="font-mono text-[var(--blue)]">{count}</span>
+          <span className="text-[var(--blue)]">{count}</span>
         </div>
-        <p className="mt-1 truncate text-[10px] text-[var(--muted)]">
-          {detail}
-        </p>
+        <p className="mt-1 truncate text-xs text-[var(--muted)]">{detail}</p>
       </div>
     </div>
   )
@@ -2340,7 +2255,7 @@ function IssueCard({
 }) {
   return (
     <article
-      className={`mt-4 rounded-xl border-l-[3px] p-4 md:p-5 tone-${tone}`}
+      className={`mt-4 rounded-md border border-l-4 p-4 md:p-5 tone-${tone}`}
     >
       {children}
     </article>
@@ -2356,8 +2271,9 @@ function StatusPill({
 }) {
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.1em] pill-${tone}`}
+      className={`inline-flex items-center gap-2 text-xs font-semibold pill-${tone}`}
     >
+      <span className="size-2 rounded-full bg-current" aria-hidden="true" />
       {children}
     </span>
   )
@@ -2377,16 +2293,14 @@ function Quote({
   return (
     <button
       onClick={onClick}
-      className={`text-left rounded-lg border p-3 transition hover:shadow-sm ${
+      className={`rounded-md border-l-2 px-4 py-3 text-left transition-colors hover:bg-[var(--soft)] ${
         selected
-          ? "border-[var(--green-border)] bg-[var(--green-soft)]"
-          : "border-[var(--line)] bg-white"
+          ? "border-[var(--green)] bg-white"
+          : "border-[var(--line-strong)] bg-white"
       }`}
     >
-      <p className="text-[9px] font-bold uppercase tracking-[.1em] text-[var(--muted)]">
-        {source}
-      </p>
-      <p className="mt-1 text-xs font-semibold">“{text}”</p>
+      <p className="text-xs font-semibold text-[var(--muted)]">{source}</p>
+      <p className="mt-2 text-sm leading-6 font-semibold">“{text}”</p>
     </button>
   )
 }
@@ -2414,7 +2328,7 @@ function Criteria({
 
 function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-md border border-[var(--line)] bg-[var(--soft)] px-2 py-1 text-[10px] font-semibold text-[var(--muted)]">
+    <span className="rounded-md bg-[var(--soft)] px-2 py-1 text-xs font-medium text-[var(--muted)]">
       {children}
     </span>
   )
