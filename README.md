@@ -1,8 +1,7 @@
-# ReqBridge AI
+# Bridgeit
 
-ReqBridge AI turns workshop notes and process flows into source-linked,
-compliance-aware user stories. Review conflicting evidence, resolve ambiguous
-requirements, and prepare a validated story for backlog export.
+Compare workshop notes with process maps, record decisions, and prepare user
+stories and acceptance criteria for backlog review.
 
 ## Run locally
 
@@ -20,9 +19,40 @@ Use `npm.cmd run build` to create a production build.
 
 ## Example workflows
 
-- **Council Tax Rebate** — claim approval thresholds and residency eligibility.
-- **Housing Repairs** — emergency routing and tenant access notice.
+- **Council Tax Rebate:** claim approval thresholds and residency eligibility.
+- **Housing Repairs:** emergency routing and tenant access notice.
+- **Blue Badge Applications:** alternative evidence, assessment routing, and
+  applicant updates.
+- **School Admissions:** ranked school preferences, address evidence, and
+  application updates.
+- **Missed Waste Collections:** report deadlines, crew checks, and revisit
+  updates.
 
 Use the example selector in the workspace to switch scenarios. These are sample
 workflows with fixture evidence; exports are copied or downloaded for review.
 The app does not connect to Jira or Azure DevOps.
+
+## Deploy to Vercel
+
+This version is a static demo and does not require environment variables or a
+backend service.
+
+1. Push this branch to GitHub.
+2. In Vercel, choose **Add New → Project** and import the GitHub repository.
+3. Keep the project root at the repository root. Vercel uses `vercel.json` to
+   build with `pnpm run build`, publish `dist`, and route app paths to the
+   frontend.
+4. Choose **Deploy**. Future pushes to the connected branch will trigger new
+   deployments.
+
+## Upload demo files
+
+The workspace includes a paired upload panel for a fixed Community Food Support
+example. Select the provided transcript and BPMN source in the panel to load it:
+
+- `public/demo-sources/Community_Food_Support_Transcript.txt`
+- `public/demo-sources/Community_Food_Support_Flow.bpmn`
+
+The browser reads these files locally. They are not uploaded to a server or
+analysed. The supplied pair loads the prepared example and its interactive
+conflict, decision, and readiness workflow.

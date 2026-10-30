@@ -99,8 +99,12 @@ function Icon({
   )
 }
 
-type ScenarioId = "rebate" | "repairs"
+type ScenarioId = "rebate" | "repairs" | "blueBadge" | "schoolAdmissions" | "wasteCollection" | "communityMeals"
 type ScenarioDecision = "primary" | "alternate"
+type UploadedSource = {
+  name: string
+  content: string
+}
 type ProcessNode = {
   id: string
   label: string
@@ -137,6 +141,8 @@ type Scenario = {
   conflictTopic: string
   transcriptQuote: string
   processQuote: string
+  primaryProcessLabel?: string
+  alternateProcessLabel?: string
   primaryOption: string
   alternateOption: string
   primaryDecision: string
@@ -147,8 +153,12 @@ type Scenario = {
   ambiguityAlternate: string
   ambiguityGivenPrefix: string
   ambiguityGivenSuffix: string
+  ambiguityWhen: string
+  ambiguityThen: string
   primaryWhen: string
   boundaryWhen: string
+  primaryGiven: string
+  boundaryGiven: string
   policyEntity: string
   policyDescription: string
   transcriptContent: string[]
@@ -164,7 +174,7 @@ type Scenario = {
 
 const scenarios: Record<ScenarioId, Scenario> = {
   rebate: {
-    project: "Public Sector / Council Tax Rebate",
+    project: "Council Tax Rebate",
     storyKey: "US-104",
     storyTitle: "Online rebate submission & automated eligibility",
     role: "resident",
@@ -184,7 +194,7 @@ const scenarios: Record<ScenarioId, Scenario> = {
     primaryOption: "Auto-approve claims up to £500",
     alternateOption: "Require supervisor review for all claims",
     primaryDecision:
-      "Claims of £500 or less are auto-approved, bypassing Nodes E and G",
+      "Claims of £500 or less are auto-approved, bypassing the five-day caseworker check and supervisor sign-off",
     alternateDecision:
       "All claims go through the five-day caseworker check and supervisor sign-off",
     ambiguityTitle: "Residency period",
@@ -193,17 +203,22 @@ const scenarios: Record<ScenarioId, Scenario> = {
     ambiguityAlternate: "12 months",
     ambiguityGivenPrefix: "resident in borough ≥",
     ambiguityGivenSuffix: "",
+    ambiguityWhen: "I submit a complete claim",
+    ambiguityThen:
+      "the residency requirement is applied to the eligibility decision",
     primaryWhen: "verified claim value ≤ £500",
     boundaryWhen: "verified claim value > £500",
+    primaryGiven: "a resident meets the confirmed eligibility criteria",
+    boundaryGiven: "a resident meets the confirmed eligibility criteria",
     policyEntity: "Bank PII",
     policyDescription:
       "AES-256 encryption and immutable audit logs added to Definition of Done.",
     transcriptContent: [
       "Discovery workshop · 45-minute dialogue",
-      "18:16 · Finance officer — “Residents should type their address and verify bank details instantly through Open Banking.”",
-      "18:42 · Rebate Manager — “Claims of £500 or less should be auto-approved. Anything above that needs supervisor review.”",
-      "19:01 · Caseworker — “The current flow sends every claim through a five-day manual check and supervisor sign-off.”",
-      "19:05 · Business analyst — “The flow also asks everyone to upload a utility bill and bank statement. That does not match the workshop.”",
+      "18:16 · Finance officer: “Residents should type their address and verify bank details instantly through Open Banking.”",
+      "18:42 · Rebate Manager: “Claims of £500 or less should be auto-approved. Anything above that needs supervisor review.”",
+      "19:01 · Caseworker: “The current flow sends every claim through a five-day manual check and supervisor sign-off.”",
+      "19:05 · Business analyst: “The flow also asks everyone to upload a utility bill and bank statement. That does not match the workshop.”",
     ],
     processSteps: [
       { id: "A", label: "Resident submits claim" },
@@ -224,7 +239,7 @@ const scenarios: Record<ScenarioId, Scenario> = {
     securityThen: "details are encrypted using AES-256 and masked in logs",
   },
   repairs: {
-    project: "Public Sector / Housing Repairs",
+    project: "Housing Repairs",
     storyKey: "US-218",
     storyTitle: "Report a repair & track its response",
     role: "tenant",
@@ -240,6 +255,8 @@ const scenarios: Record<ScenarioId, Scenario> = {
     conflictTopic: "how emergency repairs are assigned",
     transcriptQuote: "Emergency repairs go straight to the on-call team",
     processQuote: "All new reports enter the standard queue",
+    primaryProcessLabel: "Route emergency repairs to the on-call team",
+    alternateProcessLabel: "Add all reports to the standard queue for triage",
     primaryOption: "Route emergencies to the on-call team",
     alternateOption: "Keep all reports in the standard queue",
     primaryDecision: "Emergency repairs are sent directly to the on-call team",
@@ -251,16 +268,21 @@ const scenarios: Record<ScenarioId, Scenario> = {
     ambiguityAlternate: "48 hours",
     ambiguityGivenPrefix: "tenant has received",
     ambiguityGivenSuffix: " access notice",
+    ambiguityWhen: "the contractor is ready to enter the property",
+    ambiguityThen: "entry is scheduled only after the confirmed notice period",
     primaryWhen: "an emergency repair is reported",
     boundaryWhen: "a non-emergency repair is reported",
+    primaryGiven: "a tenant reports a repair and provides the property address",
+    boundaryGiven:
+      "a tenant reports a repair and provides the property address",
     policyEntity: "Tenant contact data",
     policyDescription:
       "Encrypt tenant and property details, restrict access by role, and audit changes.",
     transcriptContent: [
       "Housing repairs workshop · 38-minute dialogue",
-      "09:12 · Repairs manager — “If a repair is an emergency, it needs to go directly to the on-call team. A leaking ceiling cannot wait in a queue.”",
-      "09:26 · Service designer — “Tenants should get a clear update when the team is assigned and when a visit is booked.”",
-      "09:41 · Product owner — “We still need to agree how much notice we give tenants before entering the property.”",
+      "09:12 · Repairs manager: “If a repair is an emergency, it needs to go directly to the on-call team. A leaking ceiling cannot wait in a queue.”",
+      "09:26 · Service designer: “Tenants should get a clear update when the team is assigned and when a visit is booked.”",
+      "09:41 · Product owner: “We still need to agree how much notice we give tenants before entering the property.”",
     ],
     processSteps: [
       { id: "A", label: "Tenant reports a repair" },
@@ -279,11 +301,294 @@ const scenarios: Record<ScenarioId, Scenario> = {
     securityWhen: "details are stored or accessed",
     securityThen: "details are encrypted and visible only to authorised staff",
   },
+  blueBadge: {
+    project: "Blue Badge Applications",
+    storyKey: "US-302",
+    storyTitle: "Apply for and track a Blue Badge",
+    role: "resident",
+    action: "apply for a Blue Badge and check my application status",
+    benefit: "know what evidence is needed and when a decision is due",
+    transcriptFile: "Blue_Badge_Workshop_Transcript.txt",
+    processFile: "Blue_Badge_Application_Flow.bpmn",
+    transcriptMeta: "42m dialogue",
+    actorSummary: "Applicant · Assessment officer · Mobility team",
+    scopeSummary: "Apply · Submit evidence · Assess · Notify",
+    entitySummary: "Applicant · Health evidence · Application",
+    conflictTitle: "Assessment evidence",
+    conflictTopic: "which evidence is used to assess an application",
+    transcriptQuote:
+      "Some applicants do not have a mobility score. They should still be able to apply and send other evidence.",
+    processQuote: "Reject application if score is missing",
+    primaryProcessLabel:
+      "Send cases without a mobility score to an assessment officer",
+    alternateProcessLabel: "Require a mobility score before submission",
+    primaryOption: "Route missing mobility scores to an officer",
+    alternateOption: "Require a mobility score before submission",
+    primaryDecision:
+      "Applications without a mobility score are sent to an assessment officer",
+    alternateDecision:
+      "Applicants must provide a mobility score before submitting an application",
+    ambiguityTitle: "Assessment update timeframe",
+    ambiguityEvidence: "“Keep applicants updated regularly”",
+    ambiguityPrimary: "every 10 working days",
+    ambiguityAlternate: "every 15 working days",
+    ambiguityGivenPrefix: "the applicant last received an update",
+    ambiguityGivenSuffix: " ago",
+    ambiguityWhen: "the application is still being assessed",
+    ambiguityThen: "send the applicant a progress update",
+    primaryWhen: "an application is submitted without a mobility score",
+    boundaryWhen: "an application includes a mobility score",
+    primaryGiven: "an applicant has submitted the required supporting evidence",
+    boundaryGiven:
+      "an applicant has submitted the required supporting evidence",
+    policyEntity: "Health and identity evidence",
+    policyDescription:
+      "Limit access to health evidence to authorised assessment staff. Set a retention period and record access and decision changes.",
+    transcriptContent: [
+      "Blue Badge service workshop · 42-minute dialogue",
+      "10:02 · Mobility team lead: “An assessment officer reviews the supporting evidence and records the decision.”",
+      "10:14 · Customer service officer: “Some applicants do not have a mobility score. They should still be able to apply and send other evidence.”",
+      "10:27 · Digital service designer: “The current form stops people at the mobility score field and does not offer another route.”",
+      "10:39 · Assessment officer: “We need to tell applicants when their case is still being reviewed, not leave the status unchanged.”",
+      "10:44 · Product owner: “Let us agree whether an update is due every 10 or 15 working days.”",
+      "10:51 · Information governance lead: “Only the assessment team should see health evidence, and we need to define when it is deleted.”",
+    ],
+    processSteps: [
+      { id: "A", label: "Applicant starts an application" },
+      { id: "B", label: "Enter mobility score" },
+      { id: "C", label: "Reject application if score is missing" },
+      { id: "D", label: "Upload supporting evidence" },
+      { id: "E", label: "Assessment officer reviews application" },
+      { id: "F", label: "Send decision and status updates" },
+    ],
+    conflictStep: "C",
+    conflictTranscriptIndex: 2,
+    decisionBoundary: "Applications with a mobility score",
+    decisionBoundaryThen:
+      "Send the application to an assessment officer for review",
+    securityGiven: "an applicant submits health evidence",
+    securityWhen: "an officer opens or updates the application",
+    securityThen:
+      "only authorised assessment staff can view the evidence and access is recorded",
+  },
+  schoolAdmissions: {
+    project: "School Admissions",
+    storyKey: "US-417",
+    storyTitle: "Submit and track a school application",
+    role: "parent or carer",
+    action: "submit school preferences and track the application",
+    benefit: "know the application is complete and when an offer will be sent",
+    transcriptFile: "School_Admissions_Workshop_Transcript.txt",
+    processFile: "School_Admissions_Flow.bpmn",
+    transcriptMeta: "50m dialogue",
+    actorSummary: "Parent or carer · Admissions officer · School",
+    scopeSummary: "Add preferences · Check details · Assess · Notify",
+    entitySummary: "Child · School preference · Application",
+    conflictTitle: "School preference count",
+    conflictTopic: "how many school preferences an applicant can submit",
+    transcriptQuote:
+      "Families can list up to three schools in order of preference",
+    processQuote: "The form accepts one school choice for each application",
+    primaryProcessLabel: "Choose up to three schools in ranked order",
+    alternateProcessLabel: "Choose one school",
+    primaryOption: "Allow up to three ranked preferences",
+    alternateOption: "Accept one school preference",
+    primaryDecision:
+      "Applicants can submit up to three schools in ranked order",
+    alternateDecision: "Applicants can submit one school preference",
+    ambiguityTitle: "Address evidence deadline",
+    ambiguityEvidence: "“Provide proof of address before applications close”",
+    ambiguityPrimary: "within 5 working days",
+    ambiguityAlternate: "within 10 working days",
+    ambiguityGivenPrefix: "application submitted",
+    ambiguityGivenSuffix: " ago",
+    ambiguityWhen: "address evidence is still missing",
+    ambiguityThen: "tell the family when the address evidence must be provided",
+    primaryWhen: "a parent or carer submits school preferences",
+    boundaryWhen: "the parent or carer reviews the preference list",
+    primaryGiven: "a parent or carer is applying for a child",
+    boundaryGiven: "a parent or carer has entered school preferences",
+    policyEntity: "Children's and family information",
+    policyDescription:
+      "Collect only details needed to process an application. Restrict access to admissions staff and set a clear retention period.",
+    transcriptContent: [
+      "School admissions workshop · 50-minute dialogue",
+      "14:03 · Admissions manager: “Families can list up to three schools in order of preference.”",
+      "14:16 · Parent representative: “We need to review the list and change the order before submitting.”",
+      "14:24 · Digital product owner: “The current form only has one school choice and sends it straight to the admissions team.”",
+      "14:37 · Admissions officer: “Applicants need to know if anything is missing and how long they have to provide it.”",
+      "14:45 · School liaison: “The guidance says to provide proof of address before applications close, but it does not say how quickly after applying.”",
+      "14:51 · Information governance lead: “Application details should only be visible to staff who need them to process the case.”",
+    ],
+    processSteps: [
+      { id: "A", label: "Parent or carer starts application" },
+      { id: "B", label: "Choose one school" },
+      { id: "C", label: "Submit application" },
+      { id: "D", label: "Admissions officer checks address evidence" },
+      { id: "E", label: "Assess application against published criteria" },
+      { id: "F", label: "Send offer or outcome" },
+    ],
+    conflictStep: "B",
+    conflictTranscriptIndex: 1,
+    decisionBoundary: "Preference list changes",
+    decisionBoundaryThen:
+      "Allow the parent or carer to review and reorder the selected schools before submission",
+    securityGiven: "a parent or carer enters a child's application details",
+    securityWhen: "an admissions officer reviews the application",
+    securityThen:
+      "the application is visible only to staff assigned to admissions processing",
+  },
+  wasteCollection: {
+    project: "Missed Waste Collections",
+    storyKey: "US-526",
+    storyTitle: "Report and track a missed collection",
+    role: "resident",
+    action: "report a missed bin collection and check its status",
+    benefit: "know whether the collection will be revisited and when",
+    transcriptFile: "Missed_Collection_Workshop_Transcript.txt",
+    processFile: "Waste_Collection_Report_Flow.bpmn",
+    transcriptMeta: "35m dialogue",
+    actorSummary: "Resident · Contact centre · Collection crew",
+    scopeSummary: "Report · Check route · Assign · Update",
+    entitySummary: "Resident · Property · Collection report",
+    conflictTitle: "Report submission window",
+    conflictTopic: "how long residents have to report a missed collection",
+    transcriptQuote:
+      "Residents should report a missed collection within two working days",
+    processQuote:
+      "The online form accepts reports up to five calendar days after collection day",
+    primaryProcessLabel: "Check report date against two-working-day limit",
+    alternateProcessLabel: "Check report date against five-calendar-day limit",
+    primaryOption: "Use a two-working-day reporting window",
+    alternateOption: "Accept reports for five calendar days",
+    primaryDecision:
+      "Residents can report a missed collection within two working days",
+    alternateDecision:
+      "Residents can report a missed collection within five calendar days",
+    ambiguityTitle: "Collection status update time",
+    ambiguityEvidence: "“Tell the resident when the crew is coming back”",
+    ambiguityPrimary: "by 6 pm the next working day",
+    ambiguityAlternate: "within 2 working days",
+    ambiguityGivenPrefix: "missed collection report is",
+    ambiguityGivenSuffix: " old",
+    ambiguityWhen: "the report is still being reviewed",
+    ambiguityThen: "tell the resident when the crew will return",
+    primaryWhen: "a resident submits a report within the reporting window",
+    boundaryWhen: "a resident submits a report outside the reporting window",
+    primaryGiven: "a scheduled collection was not completed",
+    boundaryGiven: "a scheduled collection was not completed",
+    policyEntity: "Resident and property details",
+    policyDescription:
+      "Use the property address to check the collection route. Limit staff access to the details needed to handle the report and record changes.",
+    transcriptContent: [
+      "Missed collections workshop · 35-minute dialogue",
+      "08:35 · Waste services manager: “Residents should report a missed collection within two working days.”",
+      "08:43 · Contact centre lead: “The online form currently accepts reports for five calendar days after collection day.”",
+      "08:52 · Collection supervisor: “Before assigning a revisit, check whether the crew recorded an access issue or contamination.”",
+      "09:03 · Resident representative: “After I report it, I need to know whether the crew is coming back and when.”",
+      "09:11 · Product owner: “The team has not agreed whether that update is due by the next evening or within two working days.”",
+      "09:18 · Data protection officer: “Use the address to locate the route, but do not expose resident contact details to the whole crew.”",
+    ],
+    processSteps: [
+      { id: "A", label: "Resident selects collection and property" },
+      { id: "B", label: "Check report date against five-day limit" },
+      { id: "C", label: "Check crew notes and route status" },
+      { id: "D", label: "Assign a revisit if required" },
+      { id: "E", label: "Notify resident of the outcome" },
+    ],
+    conflictStep: "B",
+    conflictTranscriptIndex: 1,
+    decisionBoundary: "Reports outside the selected window",
+    decisionBoundaryThen:
+      "Show the resident the reporting limit and provide the contact centre details",
+    securityGiven: "a resident reports a missed collection",
+    securityWhen: "the crew receives a revisit assignment",
+    securityThen:
+      "the crew sees the property and collection details required for the visit, but not unnecessary contact information",
+  },
+  communityMeals: {
+    project: "Community Food Support",
+    storyKey: "US-631",
+    storyTitle: "Apply for a community food support grant",
+    role: "community organisation coordinator",
+    action: "apply for a food support grant and track its progress",
+    benefit: "plan local food support using a clear funding decision",
+    transcriptFile: "Community_Food_Support_Transcript.txt",
+    processFile: "Community_Food_Support_Flow.bpmn",
+    transcriptMeta: "48m dialogue",
+    actorSummary: "Organisation coordinator · Grant officer · Finance team",
+    scopeSummary: "Apply · Check eligibility · Assess · Pay",
+    entitySummary: "Organisation · Grant application · Payment",
+    conflictTitle: "Income eligibility check",
+    conflictTopic: "how the organisation's income is checked",
+    transcriptQuote:
+      "The grant officer should check the latest signed accounts before deciding eligibility",
+    processQuote: "Mark applications under £30,000 eligible automatically",
+    primaryProcessLabel: "Grant officer reviews latest signed accounts",
+    alternateProcessLabel: "Allow automatic eligibility under £30,000",
+    primaryOption: "Require a grant officer to review accounts",
+    alternateOption: "Auto-check applications under £30,000",
+    primaryDecision:
+      "A grant officer reviews the latest signed accounts before confirming eligibility",
+    alternateDecision:
+      "Applications under £30,000 pass the income check without a grant officer review",
+    ambiguityTitle: "Grant decision timeframe",
+    ambiguityEvidence: "“Tell applicants when they will hear back”",
+    ambiguityPrimary: "within 15 working days",
+    ambiguityAlternate: "within 20 working days",
+    ambiguityGivenPrefix: "application has been waiting",
+    ambiguityGivenSuffix: "",
+    ambiguityWhen: "the application is still under review",
+    ambiguityThen: "send the coordinator a status update",
+    primaryWhen: "a complete application is received",
+    boundaryWhen: "the application is missing signed accounts",
+    primaryGiven: "a community organisation applies for food support funding",
+    boundaryGiven: "a community organisation has started an application",
+    policyEntity: "Organisation and financial records",
+    policyDescription:
+      "Restrict access to financial records, record staff decisions, and delete application documents when the retention period ends.",
+    transcriptContent: [
+      "Community Food Support workshop transcript · 48-minute dialogue",
+      "13:05 · Community grants lead: “We need to help local organisations provide food parcels and community meals.”",
+      "13:12 · Finance officer: “The grant officer should check the latest signed accounts before deciding eligibility.”",
+      "13:19 · Programme manager: “Small organisations may not have a dedicated finance team, so we should explain what documents are accepted.”",
+      "13:26 · Service designer: “The current flow marks applications under £30,000 eligible without an accounts review. That is not what we agreed.”",
+      "13:34 · Community partner: “Applicants need to know whether a draft has been saved and which documents are still missing.”",
+      "13:42 · Grants administrator: “Tell applicants when they will hear back, but we still need to agree the number of working days.”",
+      "13:51 · Information governance lead: “Only the grants and finance teams should see the accounts. Set a retention period for the uploaded records.”",
+      "14:02 · Product owner: “Record who checked eligibility and why, so the decision can be explained later.”",
+    ],
+    processSteps: [
+      { id: "A", label: "Organisation starts an application" },
+      { id: "B", label: "Upload organisation details and accounts" },
+      {
+        id: "C",
+        label: "Mark applications under £30,000 eligible automatically",
+      },
+      { id: "D", label: "Income under £30,000?", gateway: true },
+      { id: "E", label: "Grant officer reviews signed accounts" },
+      { id: "F", label: "Finance team confirms payment details" },
+      { id: "G", label: "Notify organisation of the decision" },
+    ],
+    conflictStep: "C",
+    conflictTranscriptIndex: 6,
+    decisionBoundary: "Applications missing signed accounts",
+    decisionBoundaryThen:
+      "Keep the application incomplete and tell the coordinator which documents are needed",
+    securityGiven: "an organisation uploads signed accounts",
+    securityWhen: "a grant or finance officer reviews the application",
+    securityThen:
+      "only authorised grant and finance staff can view the accounts, and access is recorded",
+  },
 }
 
 export default function App() {
   const [scenarioId, setScenarioId] = useState<ScenarioId>("rebate")
   const scenario = scenarios[scenarioId]
+  const [uploadedTranscript, setUploadedTranscript] =
+    useState<UploadedSource | null>(null)
+  const [uploadedBpmn, setUploadedBpmn] = useState<UploadedSource | null>(null)
+  const [uploadError, setUploadError] = useState("")
   const [resolved, setResolved] = useState(false)
   const [applying, setApplying] = useState(false)
   const [readiness, setReadiness] = useState(78)
@@ -312,9 +617,6 @@ export default function App() {
       : ambiguity === "alternate"
         ? scenario.ambiguityAlternate
         : ""
-  const scenarioGiven = ambiguityConfirmed
-    ? `${scenario.ambiguityGivenPrefix} ${ambiguityValue}${scenario.ambiguityGivenSuffix}`
-    : `${scenario.ambiguityTitle.toLowerCase()} requirement has not been confirmed`
   const storyOptions: StorySpec[] =
     scenarioId === "rebate"
       ? [
@@ -409,14 +711,23 @@ export default function App() {
             benefit: scenario.benefit,
             acceptance: [
               {
-                given: scenarioGiven,
+                given: scenario.primaryGiven,
                 when: scenario.primaryWhen,
                 then: decisionDescription,
               },
               {
-                given: "a repair has been classified as non-emergency",
+                given: scenario.boundaryGiven,
                 when: scenario.boundaryWhen,
                 then: scenario.decisionBoundaryThen,
+              },
+              {
+                given: ambiguityConfirmed
+                  ? `${scenario.ambiguityGivenPrefix} ${ambiguityValue}${scenario.ambiguityGivenSuffix}`
+                  : `${scenario.ambiguityTitle.toLowerCase()} has not been confirmed`,
+                when: scenario.ambiguityWhen,
+                then: ambiguityConfirmed
+                  ? `${scenario.ambiguityThen} (${ambiguityValue})`
+                  : "hold the next step until the timeframe is confirmed",
               },
             ],
             requirements: ["GDPR Art. 32", "WCAG 2.1 AA"],
@@ -431,7 +742,6 @@ export default function App() {
       ? [
           {
             id: "CONF-02",
-            node: "Node B",
             title: "Address evidence",
             transcript: "Residents type their address",
             process: "Process map requires a utility bill PDF upload",
@@ -439,7 +749,6 @@ export default function App() {
           },
           {
             id: "CONF-03",
-            node: "Node C",
             title: "Bank verification",
             transcript: "Verify instantly through Open Banking",
             process: "Process map requires a bank statement PDF upload",
@@ -450,10 +759,13 @@ export default function App() {
   const totalConflictCount = 1 + minorConflicts.length
   const totalIssueCount = totalConflictCount + 1 + 2
   const reviewedMinorCount = Object.keys(minorResolutions).length
+  const gatewayCount = scenario.processSteps.filter(
+    (step) => step.gateway,
+  ).length
   const acceptanceCriteria = activeStory.acceptance.map(
     ({ given, when, then }) => `Given ${given}; When ${when}; Then ${then}`,
   )
-  const exportText = `## ${activeStory.key} — ${activeStory.title}
+  const exportText = `## ${activeStory.key}: ${activeStory.title}
 
 **As a** ${activeStory.role}  
 **I want to** ${activeStory.action}  
@@ -478,23 +790,6 @@ _Source decision: CONF-01 · ${decisionDescription}._`
       ? exportText
       : `# Azure DevOps · User Story\n\n${exportText.replace(`## ${activeStory.key}`, `## Title: ${activeStory.key}`)}`
 
-  const resetWorkspace = () => {
-    setResolved(false)
-    setApplying(false)
-    setReadiness(78)
-    setTab(0)
-    setStoryIndex(0)
-    setSource(null)
-    setPolicyOpen(false)
-    setAmbiguity("Unconfirmed")
-    setDecision("primary")
-    setDecisionTime("")
-    setMinorResolutions({})
-    setModalOpen(false)
-    setCopied(false)
-    setFormat("Jira")
-  }
-
   const changeScenario = (nextScenario: ScenarioId) => {
     setScenarioId(nextScenario)
     setResolved(false)
@@ -510,6 +805,54 @@ _Source decision: CONF-01 · ${decisionDescription}._`
     setMinorResolutions({})
     setModalOpen(false)
     setCopied(false)
+  }
+
+  const handleSourceUpload = async (
+    file: File | undefined,
+    kind: "transcript" | "bpmn",
+  ) => {
+    if (!file) return
+    setUploadError("")
+    try {
+      const content = await file.text()
+      if (kind === "transcript") {
+        setUploadedTranscript(null)
+        if (
+          file.name !== "Community_Food_Support_Transcript.txt" ||
+          !content.includes("Community Food Support workshop transcript") ||
+          !content.includes("latest signed accounts")
+        ) {
+          setUploadError(
+            "This requirements file is not supported. Choose the provided .txt requirements file.",
+          )
+          return
+        }
+        setUploadedTranscript({ name: file.name, content })
+        return
+      }
+
+      setUploadedBpmn(null)
+      if (
+        file.name !== "Community_Food_Support_Flow.bpmn" ||
+        !/<(?:[\w.-]+:)?definitions\b/i.test(content) ||
+        !content.includes("Task_AutoEligibility")
+      ) {
+        setUploadError(
+          "This process map is not supported. Choose the provided .bpmn process map file.",
+        )
+        return
+      }
+      setUploadedBpmn({ name: file.name, content })
+    } catch {
+      setUploadError("Could not read the selected file. Please try again.")
+    }
+  }
+
+  const clearUploadedSources = () => {
+    setUploadedTranscript(null)
+    setUploadedBpmn(null)
+    setUploadError("")
+    if (scenarioId === "communityMeals") changeScenario("rebate")
   }
 
   useEffect(() => {
@@ -594,7 +937,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
       await navigator.clipboard.writeText(formattedExport)
       setCopied(true)
     } catch {
-      setSource("Clipboard unavailable — download JSON instead.")
+      setSource("Clipboard unavailable. Download the JSON instead.")
     }
     window.setTimeout(() => setCopied(false), 1800)
   }
@@ -627,97 +970,111 @@ _Source decision: CONF-01 · ${decisionDescription}._`
     URL.revokeObjectURL(url)
   }
 
+  const communityMealsUnlocked = Boolean(uploadedTranscript && uploadedBpmn)
+  const transcriptLines =
+    scenarioId === "communityMeals" && uploadedTranscript
+      ? uploadedTranscript.content.split(/\r?\n/).filter(Boolean)
+      : scenario.transcriptContent
+
   return (
     <div className="min-h-screen bg-[var(--canvas)] text-[var(--ink)]">
       <header className="border-b border-[var(--line)] bg-white">
         <div className="mx-auto flex max-w-[1480px] items-center justify-between px-5 py-4 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--ink)] text-xs font-bold text-white">
-              R
-            </div>
-            <div className="flex min-w-0 items-center gap-2 text-sm">
-              <span className="truncate font-bold">ReqBridge</span>
-              <span className="text-[var(--line-strong)]">/</span>
-              <span className="truncate text-[var(--muted)]">
-                {scenario.project}
+            <div className="flex shrink-0 items-center gap-2 border-r border-[var(--line)] pr-3">
+              <span className="relative text-lg font-bold tracking-[-.06em] text-[var(--ink)]">
+                accenture
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-2 -top-1 text-base font-bold text-[var(--green)]"
+                >
+                  &gt;
+                </span>
               </span>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setModalOpen(true)}
-              disabled={!canExport}
-              className="disabled:bg-[var(--disabled)] disabled:text-[var(--muted)] hidden items-center gap-2 rounded-lg bg-[var(--ink)] px-4 py-2.5 text-xs font-bold text-white transition hover:opacity-90 md:flex"
-            >
-              Export to Jira <Icon name="arrow" className="size-3.5" />
-            </button>
+            <div className="min-w-0">
+              <p className="text-sm font-bold">Bridgeit</p>
+              <p className="truncate text-xs text-[var(--muted)]">
+                {scenario.project}
+              </p>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="border-b border-[var(--line)] bg-white">
-        <div className="mx-auto flex max-w-[1480px] items-center gap-2 overflow-x-auto px-5 py-3 text-[11px] font-semibold lg:px-8">
-          <span className="mr-3 shrink-0 tracking-[.12em] text-[var(--muted)]">
-            DELIVERY WORKFLOW
-          </span>
-          <Step label="Ingest & extract" number="1" state="done" />
-          <span className="text-[var(--line-strong)]">—</span>
+      <div className="border-b border-[var(--line)] bg-[var(--soft)]">
+        <div className="mx-auto grid max-w-[1480px] grid-cols-2 gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-3 lg:grid-cols-5 lg:px-8">
+          <Step label="Ingest and extract" state="done" />
+          <Step label="Check evidence" state="done" detail="2 checks" />
+          <Step label="Draft story" state="done" />
           <Step
-            label="Audit & policy"
-            number="2"
-            state="done"
-            detail="2 checks"
-          />
-          <span className="text-[var(--line-strong)]">—</span>
-          <Step label="Story draft" number="3" state="done" />
-          <span className="text-[var(--line-strong)]">—</span>
-          <Step
-            label="Human triage"
-            number="4"
+            label="Review decisions"
             state={resolved ? "done" : "active"}
             detail={
               resolved
-                ? `1 blocker resolved · ${reviewedMinorCount}/${minorConflicts.length} warnings reviewed`
-                : `1 blocker · ${minorConflicts.length} warnings`
+                ? `1 blocker resolved, ${reviewedMinorCount}/${minorConflicts.length} warnings reviewed`
+                : `1 blocker, ${minorConflicts.length} warnings`
             }
           />
-          <span className="text-[var(--line-strong)]">—</span>
           <Step
-            label="Backlog export"
-            number="5"
+            label="Prepare export"
             state={canExport ? "done" : "locked"}
-            detail={canExport ? "Ready" : "Gated"}
+            detail={canExport ? "Ready" : "Waiting"}
           />
-          <span className="ml-auto hidden shrink-0 items-center gap-1.5 text-[var(--green-dark)] md:flex">
-            <Icon name={canExport ? "check" : "clock"} className="size-3.5" />{" "}
-            {applying
-              ? "Recording decision"
-              : canExport
-                ? "Ready for delivery export"
-                : !ambiguityConfirmed && resolved
-                  ? "Clarification required"
-                  : resolved
-                    ? "Readiness recalculating"
-                    : "Human review required"}
-          </span>
         </div>
       </div>
 
-      <main className="mx-auto max-w-[1480px] px-5 py-8 lg:px-8">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <span className="font-semibold text-[var(--muted)]">
-            WORKSPACE STATUS ·{" "}
-            {resolved
-              ? "02 / Decision verified"
-              : "01 / Source conflict detected"}
-          </span>
-          <div className="flex flex-wrap gap-4">
-            <button
-              onClick={resetWorkspace}
-              className="font-semibold text-[var(--muted)]"
+      <main className="mx-auto max-w-[1480px] px-5 py-7 lg:px-8">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-semibold tracking-[-.035em] md:text-4xl">
+              Bridgeit
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)] md:text-base">
+              Compare workshop evidence with process maps, resolve open
+              questions, and prepare clear backlog stories.
+            </p>
+          </div>
+          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-64">
+            <label
+              className="text-xs font-semibold text-[var(--muted)]"
+              htmlFor="scenario-select"
             >
-              Reset workspace
-            </button>
+              Current example
+            </label>
+            <select
+              id="scenario-select"
+              value={scenarioId}
+              disabled={
+                scenarioId === "communityMeals" && !communityMealsUnlocked
+              }
+              onChange={(event) => {
+                const nextScenario = event.target.value as ScenarioId
+                if (nextScenario in scenarios) changeScenario(nextScenario)
+              }}
+              className="w-full rounded-md border border-[var(--line-strong)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--ink)] focus:ring-2 focus:ring-[var(--blue)]"
+            >
+              <option value="rebate">Council Tax Rebate</option>
+              <option value="repairs">Housing Repairs</option>
+              <option value="blueBadge">Blue Badge Applications</option>
+              <option value="schoolAdmissions">School Admissions</option>
+              <option value="wasteCollection">Missed Waste Collections</option>
+              {communityMealsUnlocked && (
+                <option value="communityMeals">Community Food Support</option>
+              )}
+            </select>
+            <span
+              className={`flex items-center gap-2 text-xs font-semibold ${
+                canExport ? "text-[var(--green-dark)]" : "text-[var(--muted)]"
+              }`}
+            >
+              <span
+                className={`size-2 rounded-full ${
+                  canExport ? "bg-[var(--green)]" : "bg-[var(--amber)]"
+                }`}
+              />
+              {canExport ? "Ready to export" : "Review required"}
+            </span>
           </div>
         </div>
         <p role="status" className="sr-only">
@@ -729,52 +1086,109 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   canExport ? "available" : "locked"
                 }.`}
         </p>
-        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[.16em] text-[var(--blue)]">
-              Requirements to delivery
-            </p>
-            <h1 className="font-display text-3xl font-semibold tracking-[-.03em] md:text-4xl">
-              Resolve the gaps. Ship with confidence.
-            </h1>
-            <p className="mt-2 text-sm text-[var(--muted)]">
-              Every decision is source-linked, reviewable and ready for your
-              backlog.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 self-start rounded-full border border-[var(--line)] bg-white px-3 py-2 text-xs text-[var(--muted)] md:self-auto">
-            <label className="sr-only" htmlFor="scenario-select">
-              Choose a workflow example
-            </label>
-            <select
-              id="scenario-select"
-              value={scenarioId}
-              onChange={(event) => {
-                if (
-                  event.target.value === "rebate" ||
-                  event.target.value === "repairs"
-                ) {
-                  changeScenario(event.target.value)
-                }
-              }}
-              className="max-w-[230px] rounded-md border-0 bg-transparent py-1 text-xs font-semibold text-[var(--ink)] focus:ring-2 focus:ring-[var(--blue)]"
+        <section
+          aria-labelledby="upload-title"
+          className="mb-6 rounded-lg border border-[var(--line)] bg-white p-5 md:p-6"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2
+                id="upload-title"
+                className="text-lg font-semibold md:text-xl"
+              >
+                Upload requirements and process map
+              </h2>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+                Add your requirements document and process map to prepare them
+                for review.
+              </p>
+            </div>
+            <button
+              onClick={clearUploadedSources}
+              disabled={!uploadedTranscript && !uploadedBpmn}
+              className="text-xs font-semibold text-[var(--muted)] underline disabled:opacity-40"
             >
-              <option value="rebate">Council Tax Rebate</option>
-              <option value="repairs">Housing Repairs</option>
-            </select>
-            <span className="text-[var(--line-strong)]">/</span>{" "}
-            {canExport
-              ? "Ready to export"
-              : resolved && !ambiguityConfirmed
-                ? "Clarification needed"
-                : "Working draft"}
+              Clear files
+            </button>
           </div>
-        </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <label
+              htmlFor="transcript-upload"
+              className="cursor-pointer rounded-md border border-dashed border-[var(--line-strong)] bg-[var(--soft)] p-4 hover:border-[var(--blue)]"
+            >
+              <span className="block text-sm font-semibold">
+                Requirements document (.txt)
+              </span>
+              <span className="mt-1 block truncate text-sm text-[var(--muted)]">
+                {uploadedTranscript?.name ?? "Choose a requirements file"}
+              </span>
+              <input
+                id="transcript-upload"
+                type="file"
+                accept=".txt,text/plain"
+                className="sr-only"
+                onChange={(event) =>
+                  void handleSourceUpload(
+                    event.currentTarget.files?.[0],
+                    "transcript",
+                  )
+                }
+              />
+            </label>
+            <label
+              htmlFor="bpmn-upload"
+              className="cursor-pointer rounded-md border border-dashed border-[var(--line-strong)] bg-[var(--soft)] p-4 hover:border-[var(--blue)]"
+            >
+              <span className="block text-sm font-semibold">
+                Process map (.bpmn)
+              </span>
+              <span className="mt-1 block truncate text-sm text-[var(--muted)]">
+                {uploadedBpmn?.name ?? "Choose a process map file"}
+              </span>
+              <input
+                id="bpmn-upload"
+                type="file"
+                accept=".bpmn,application/xml,text/xml"
+                className="sr-only"
+                onChange={(event) =>
+                  void handleSourceUpload(
+                    event.currentTarget.files?.[0],
+                    "bpmn",
+                  )
+                }
+              />
+            </label>
+          </div>
+          {uploadError && (
+            <p
+              role="alert"
+              className="mt-3 text-xs font-semibold text-[var(--red)]"
+            >
+              {uploadError}
+            </p>
+          )}
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+            <button
+              disabled={!communityMealsUnlocked}
+              onClick={() => changeScenario("communityMeals")}
+              className="rounded-lg bg-[var(--ink)] px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:bg-[var(--disabled)] disabled:text-[var(--muted)]"
+            >
+              {communityMealsUnlocked
+                ? "Continue to review"
+                : "Select both files to continue"}
+            </button>
+          </div>
+          {communityMealsUnlocked && (
+            <p role="status" className="mt-3 text-xs text-[var(--green-dark)]">
+              Both files are ready. Continue to review the workflow.
+            </p>
+          )}
+        </section>
 
-        <div className="grid gap-5 lg:grid-cols-[250px_minmax(430px,1fr)_minmax(340px,.85fr)]">
-          <aside className="rounded-2xl border border-[var(--line)] bg-white p-5">
-            <SectionLabel number="01" label="Provenance" />
-            <p className="mt-7 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
+        <div className="grid items-start gap-4 md:grid-cols-[minmax(190px,.72fr)_minmax(0,1.28fr)] xl:grid-cols-[260px_minmax(430px,1.1fr)_minmax(320px,.9fr)] xl:gap-5">
+          <aside className="rounded-lg border border-[var(--line)] bg-white p-4 md:p-5">
+            <SectionLabel label="Sources and scope" />
+            <p className="mt-5 text-sm font-semibold">
               Source material · 2 files
             </p>
             <SourceFile
@@ -784,43 +1198,39 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             />
             <SourceFile
               name={scenario.processFile}
-              meta={
-                scenarioId === "rebate"
-                  ? "7 nodes · 1 gateway"
-                  : `${scenario.processSteps.length} steps`
-              }
+              meta={`${scenario.processSteps.length} steps · ${gatewayCount} ${
+                gatewayCount === 1 ? "gateway" : "gateways"
+              }`}
               onClick={() => setSource("bpmn")}
             />
             <div className="my-5 border-t border-[var(--line)]" />
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
-              Extracted directory
-            </p>
+            <p className="mb-2 text-sm font-semibold">Extracted directory</p>
             <DirectoryItem
               icon="users"
               title="Actors"
-              count="5"
+              count={String(scenario.actorSummary.split(" · ").length)}
               detail={scenario.actorSummary}
             />
             <DirectoryItem
               icon="spark"
-              title="Functional scope rules"
-              count="8"
+              title="Workflow areas"
+              count={String(scenario.scopeSummary.split(" · ").length)}
               detail={scenario.scopeSummary}
             />
             <DirectoryItem
               icon="file"
               title="Data entities"
-              count="4"
+              count={String(scenario.entitySummary.split(" · ").length)}
               detail={scenario.entitySummary}
             />
           </aside>
 
-          <section>
-            <div className="rounded-2xl border border-[var(--line)] bg-white p-5 md:p-6">
+          <section className="min-w-0">
+            <div className="rounded-lg border border-[var(--line)] bg-white p-4 md:p-5">
               <div className="flex items-center justify-between">
-                <SectionLabel number="02" label="Triage workbench" />
+                <SectionLabel label="Evidence review" />
               </div>
-              <div className="mt-5 flex gap-1 overflow-x-auto border-b border-[var(--line)] text-xs">
+              <div className="mt-4 grid grid-cols-2 gap-1 rounded-md bg-[var(--soft)] p-1 text-xs sm:grid-cols-4">
                 {[
                   `All (${totalIssueCount})`,
                   `Conflicts (${totalConflictCount})`,
@@ -831,10 +1241,10 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                     key={label}
                     onClick={() => setTab(index)}
                     aria-pressed={index === tab}
-                    className={`shrink-0 border-b-2 px-3 py-3 font-semibold ${
+                    className={`min-w-0 rounded px-2 py-2.5 text-center font-semibold transition-colors ${
                       index === tab
-                        ? "border-[var(--ink)] text-[var(--ink)]"
-                        : "border-transparent text-[var(--muted)]"
+                        ? "bg-white text-[var(--ink)]"
+                        : "text-[var(--muted)] hover:text-[var(--ink)]"
                     }`}
                   >
                     {label}
@@ -849,11 +1259,11 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       <StatusPill tone={resolved ? "green" : "red"}>
                         {resolved
                           ? "✓ Resolved · Decision recorded"
-                          : "Blocker · Confidence 98%"}
+                          : "Blocker · Needs a decision"}
                       </StatusPill>
                       <h2 className="mt-3 text-base font-semibold">
                         {resolved
-                          ? `CONF-01: ${scenario.conflictTitle} — Decision Recorded`
+                          ? `CONF-01: ${scenario.conflictTitle}: Decision recorded`
                           : `CONF-01: ${scenario.conflictTitle}`}
                       </h2>
                       <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
@@ -861,16 +1271,16 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           ? `${decisionDescription} adopted as the agreed rule. Process flow step updated.`
                           : `The sources disagree about ${scenario.conflictTopic}. Choose the governing rule.`}
                       </p>
-                      <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
-                        Why flagged: transcript approval rules conflict with
-                        Node {scenario.conflictStep}; the five-day caseworker
-                        check is also on the current route. Confidence: 98%.
+                      <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
+                        Reason: the workshop account of {scenario.conflictTopic}{" "}
+                        differs from the process map.
                       </p>
                     </div>
                     {resolved && (
-                      <div className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--green)] text-white">
-                        <Icon name="check" />
-                      </div>
+                      <Icon
+                        name="check"
+                        className="mt-1 size-5 shrink-0 text-[var(--green)]"
+                      />
                     )}
                   </div>
                   <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -881,7 +1291,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       selected={resolved}
                     />
                     <Quote
-                      source={`Process flow · Node ${scenario.conflictStep}`}
+                      source="Process flow"
                       text={scenario.processQuote}
                       onClick={() => setSource("bpmn")}
                     />
@@ -894,7 +1304,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           setDecision("primary")
                           setApplying(true)
                         }}
-                        className="rounded-lg bg-[var(--red)] px-3.5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-[var(--red)] focus:ring-offset-2"
+                        className="rounded-md bg-[var(--ink)] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--green-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--green)] focus:ring-offset-2"
                       >
                         {applying
                           ? "Recording decision…"
@@ -945,7 +1355,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           </button>
                         ))}
                       </div>
-                      <details className="mt-3 text-[11px] text-[var(--green-dark)]">
+                      <details className="mt-3 text-xs text-[var(--green-dark)]">
                         <summary className="cursor-pointer font-semibold">
                           Decision audit · Product Owner · {decisionTime}
                         </summary>
@@ -984,11 +1394,8 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                               ? "Resolved · Process map update proposed"
                               : resolution === "dismiss"
                                 ? "Not an issue · Reviewer acknowledged"
-                                : "Warning · Confidence 93%"}
+                                : "Warning · Needs review"}
                           </StatusPill>
-                          <span className="text-[10px] font-semibold text-[var(--muted)]">
-                            {conflict.node}
-                          </span>
                         </div>
                         <h3 className="mt-3 text-sm font-semibold">
                           {conflict.id}: {conflict.title}
@@ -997,8 +1404,8 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           Transcript: “{conflict.transcript}.” Process map: “
                           {conflict.process}.”
                         </p>
-                        <p className="mt-2 text-[11px] text-[var(--muted)]">
-                          Why flagged: {conflict.why}
+                        <p className="mt-2 text-xs text-[var(--muted)]">
+                          Reason: {conflict.why}
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           <button
@@ -1059,9 +1466,8 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   <p className="mt-1 text-sm text-[var(--muted)]">
                     Evidence: {scenario.ambiguityEvidence}
                   </p>
-                  <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">
-                    Why flagged: the source has no testable threshold.
-                    Confidence: 88%.
+                  <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+                    Reason: the source does not define a testable threshold.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {([
@@ -1094,7 +1500,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           : `Confirm ${option}`}
                       </button>
                     ))}
-                    <span className="ml-auto self-center text-[11px] font-semibold text-[var(--amber-dark)]">
+                    <span className="ml-auto self-center text-xs font-semibold text-[var(--amber-dark)]">
                       {!ambiguityConfirmed
                         ? ambiguity === "Clarify"
                           ? "Clarification requested · export blocked"
@@ -1115,12 +1521,12 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               {(tab === 0 || tab === 3) && (
                 <IssueCard tone="blue">
                   <div className="flex items-start gap-3">
-                    <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--blue-soft)] text-[var(--blue)]">
+                    <div className="grid size-8 shrink-0 place-items-center text-[var(--blue)]">
                       <Icon name="shield" />
                     </div>
                     <div>
                       <StatusPill tone="blue">
-                        Inferred NFR · Automatically injected
+                        Data protection requirement · Review
                       </StatusPill>
                       <h2 className="mt-2 text-base font-semibold">
                         POL-01: {scenario.policyEntity}{" "}
@@ -1148,23 +1554,25 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       </strong>
                       <ul className="ml-4 list-disc">
                         <li>
-                          Use Open Banking tokens instead of storing raw bank
-                          account numbers.
+                          Collect only the personal information needed for the
+                          service.
                         </li>
                         <li>
-                          Display only the last four digits (****5678); mask
-                          sensitive values in logs.
+                          Limit access to staff who need the information for
+                          their role.
                         </li>
                         <li>
-                          Define and enforce a retention period; delete data
-                          when it expires (GDPR Article 5).
+                          Set a retention period and delete information when it
+                          is no longer needed.
                         </li>
-                        <li>AES-256 encryption and access controls.</li>
-                        <li>Immutable audit event for every status change.</li>
+                        <li>
+                          Encrypt sensitive information in storage and transit.
+                        </li>
+                        <li>Record access and changes to the application.</li>
                       </ul>
                       <p className="mt-2">
-                        Why flagged: bank details are sensitive personal data.
-                        These are proposed safeguards for stakeholder review.
+                        Reason: bank details are personal data. Confirm these
+                        safeguards with the relevant team.
                       </p>
                     </div>
                   )}
@@ -1175,12 +1583,12 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                 <>
                   <IssueCard tone="blue">
                     <div className="flex items-start gap-3">
-                      <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--blue-soft)] text-[var(--blue)]">
+                      <div className="grid size-8 shrink-0 place-items-center text-[var(--blue)]">
                         <Icon name="users" />
                       </div>
                       <div>
                         <StatusPill tone="blue">
-                          POL-02 · Inferred NFR · Confidence 96%
+                          POL-02 · Accessibility requirement
                         </StatusPill>
                         <h2 className="mt-2 text-base font-semibold">
                           Accessibility · WCAG 2.1 AA
@@ -1189,9 +1597,9 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           Keyboard-operable forms, labelled controls, screen
                           reader announcements, and sufficient contrast.
                         </p>
-                        <p className="mt-2 text-[11px] text-[var(--muted)]">
-                          Why included: the claim service is public-facing and
-                          must support people using assistive technology.
+                        <p className="mt-2 text-xs text-[var(--muted)]">
+                          Why included: residents use this service, including
+                          people who rely on assistive technology.
                         </p>
                       </div>
                     </div>
@@ -1201,16 +1609,16 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             </div>
           </section>
 
-          <aside className="space-y-5">
+          <aside className="space-y-4 md:col-span-2 xl:col-span-1">
             <div
-              className={`overflow-hidden rounded-2xl border bg-white transition-colors duration-500 ${
+              className={`overflow-hidden rounded-lg border bg-white transition-colors duration-500 ${
                 canExport
                   ? "border-[var(--green-border)]"
                   : "border-[var(--line)]"
               }`}
             >
               <div className="p-5 md:p-6">
-                <SectionLabel number="03" label="Story & BDD" />
+                <SectionLabel label="User story and criteria" />
                 <div className="mt-7 flex items-end justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
@@ -1232,37 +1640,6 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       <span className="ml-1 text-xl">%</span>
                     </div>
                   </div>
-                  <div className="relative size-20">
-                    <svg viewBox="0 0 80 80" className="-rotate-90">
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="34"
-                        fill="none"
-                        stroke="var(--soft)"
-                        strokeWidth="7"
-                      />
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="34"
-                        fill="none"
-                        stroke={canExport ? "var(--green)" : "var(--amber)"}
-                        strokeWidth="7"
-                        strokeLinecap="round"
-                        strokeDasharray={`${readiness * 2.136} 214`}
-                        className="transition-all duration-700"
-                      />
-                    </svg>
-                    <Icon
-                      name={canExport ? "check" : "clock"}
-                      className={`absolute left-1/2 top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 ${
-                        canExport
-                          ? "text-[var(--green)]"
-                          : "text-[var(--amber)]"
-                      }`}
-                    />
-                  </div>
                 </div>
                 <p className="mt-3 text-xs leading-5 text-[var(--muted)]">
                   {!resolved
@@ -1271,7 +1648,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       ? `The decision is recorded, but ${scenario.ambiguityTitle.toLowerCase()} must be confirmed. Readiness is capped at 88%.`
                       : `All blockers cleared. Export unlocks at 85%; readiness is ${readiness}%.`}
                 </p>
-                <details className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--soft)] p-3 text-xs">
+                <details className="mt-4 rounded-md bg-[var(--soft)] p-4 text-sm">
                   <summary className="cursor-pointer font-semibold">
                     Why {readiness}%? · View score breakdown
                   </summary>
@@ -1296,7 +1673,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       <span>Product Owner ambiguity confirmation</span>
                       <span>{ambiguityConfirmed ? "16 / 16" : "10 / 16"}</span>
                     </li>
-                    <li className="flex justify-between gap-3 border-t border-[var(--line)] pt-2">
+                    <li className="flex justify-between gap-3 pt-2">
                       <span>Estimate not supplied</span>
                       <span>0 / 6</span>
                     </li>
@@ -1320,8 +1697,8 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               <div className="border-t border-[var(--line)] p-5 md:p-6">
                 {storyOptions.length > 1 && (
                   <div className="mb-5">
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
-                      INVEST-sized story set · {storyOptions.length} stories
+                    <p className="mb-3 text-sm font-semibold text-[var(--ink)]">
+                      Story set · {storyOptions.length} stories
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {storyOptions.map((story, index) => (
@@ -1329,13 +1706,15 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           key={story.key}
                           onClick={() => setStoryIndex(index)}
                           aria-pressed={storyIndex === index}
-                          className={`rounded-lg border px-3 py-2 text-left text-xs font-semibold ${
+                          className={`rounded-md border px-3 py-2 text-left text-sm font-semibold ${
                             storyIndex === index
                               ? "border-[var(--ink)] bg-[var(--ink)] text-white"
                               : "border-[var(--line)] bg-white text-[var(--muted)]"
                           }`}
                         >
-                          <span className="block font-mono">{story.key}</span>
+                          <span className="block text-xs text-[var(--muted)]">
+                            {story.key}
+                          </span>
                           <span className="mt-1 block">{story.title}</span>
                         </button>
                       ))}
@@ -1343,7 +1722,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   </div>
                 )}
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-xs font-bold text-[var(--blue)]">
+                  <span className="text-xs font-semibold text-[var(--muted)]">
                     {activeStory.key}
                   </span>
                   <StatusPill tone={canExport ? "green" : "neutral"}>
@@ -1361,16 +1740,16 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   <strong className="text-[var(--ink)]">so that</strong>{" "}
                   {activeStory.benefit}.
                 </p>
-                <p className="mt-5 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
+                <p className="mt-5 text-sm font-semibold">
                   Acceptance criteria · BDD
                 </p>
                 <div className="mt-3 space-y-3">
                   {activeStory.acceptance.map((acceptance, index) => (
                     <div
                       key={`${activeStory.key}-scenario-${index}`}
-                      className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--code-bg)] font-mono text-[11px] leading-5"
+                      className="overflow-hidden rounded-md bg-[var(--soft)] text-sm leading-6"
                     >
-                      <div className="border-b border-[var(--line)] px-3 py-2 text-[10px] font-bold uppercase tracking-[.1em] text-[var(--muted)]">
+                      <div className="px-3 py-2 text-xs font-semibold text-[var(--muted)]">
                         Scenario {index + 1}
                       </div>
                       <Criteria label="Given" value={acceptance.given} />
@@ -1384,12 +1763,12 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   ))}
                 </div>
                 {resolved && ambiguityConfirmed && (
-                  <div className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[var(--green-dark)]">
-                    <Icon name="spark" className="size-3.5" /> Criteria updated
-                    from adopted decision
+                  <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-[var(--green-dark)]">
+                    <Icon name="check" className="size-3.5" /> Acceptance
+                    criteria reflect this decision
                   </div>
                 )}
-                <p className="mt-5 text-[10px] font-bold uppercase tracking-[.14em] text-[var(--muted)]">
+                <p className="mt-5 text-sm font-semibold">
                   Attached requirements
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -1403,7 +1782,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                 <button
                   disabled={!canExport}
                   onClick={() => setModalOpen(true)}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ink)] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:bg-[var(--disabled)] disabled:text-[var(--muted)] disabled:shadow-none"
+                  className="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--ink)] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--green-dark)] disabled:cursor-not-allowed disabled:bg-[var(--disabled)] disabled:text-[var(--muted)]"
                 >
                   <span>Export Story</span>
                   <span className="ml-auto flex items-center gap-2 text-xs font-semibold text-white/70">
@@ -1411,7 +1790,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   </span>
                 </button>
                 {!canExport && (
-                  <p className="mt-2 text-center text-[10px] text-[var(--muted)]">
+                  <p className="mt-2 text-center text-xs text-[var(--muted)]">
                     {!resolved
                       ? `Resolve the ${scenario.conflictTitle.toLowerCase()} to enable export`
                       : !ambiguityConfirmed
@@ -1426,8 +1805,8 @@ _Source decision: CONF-01 · ${decisionDescription}._`
       </main>
 
       <footer className="mt-8 border-t border-[var(--line)] bg-white">
-        <div className="mx-auto flex max-w-[1480px] flex-col justify-between gap-2 px-5 py-5 text-[11px] text-[var(--muted)] sm:flex-row lg:px-8">
-          <span>Source-linked decisions. Auditable by design.</span>
+        <div className="mx-auto flex max-w-[1480px] flex-col justify-between gap-2 px-5 py-5 text-xs text-[var(--muted)] sm:flex-row lg:px-8">
+          <span>Source-linked decisions and a clear review trail.</span>
           <span className="flex items-center gap-1.5">
             <span className="size-1.5 rounded-full bg-[var(--green)]" />{" "}
             Workspace changes · session only
@@ -1437,7 +1816,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
 
       {source && (
         <div
-          className="fixed inset-0 z-[60] flex justify-end bg-[rgba(15,23,42,.35)] backdrop-blur-sm"
+          className="fixed inset-0 z-[60] flex justify-end bg-[rgba(15,23,42,.35)]"
           onMouseDown={(event) =>
             event.target === event.currentTarget && setSource(null)
           }
@@ -1450,9 +1829,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--blue)]">
-                  Source-linked evidence · Example workspace
-                </p>
+                <p className="text-sm text-[var(--muted)]">Example workspace</p>
                 <h2 id="source-title" className="mt-3 text-xl font-semibold">
                   {source === "transcript"
                     ? scenario.transcriptFile
@@ -1474,28 +1851,36 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             </div>
             {source === "transcript" ? (
               <div className="mt-8 space-y-5 text-sm leading-7 text-[var(--muted)]">
-                {scenario.transcriptContent.map((entry, index) => (
+                {transcriptLines.map((entry, index) => (
                   <p
                     key={entry}
                     className={
                       index === scenario.conflictTranscriptIndex
-                        ? "rounded-xl border-l-4 border-[var(--amber)] bg-[var(--amber-soft)] p-4 text-[var(--ink)]"
+                        ? "rounded-md border-l-4 border-[var(--amber)] bg-[var(--amber-soft)] p-4 text-[var(--ink)]"
                         : ""
                     }
                   >
                     {entry}
                   </p>
                 ))}
-                <p className="border-t border-[var(--line)] pt-4 text-xs">
+                <p className="border-t border-[var(--line)] pt-4 text-sm">
                   Example evidence for {scenario.storyKey}. Review the conflict
                   and confirm the governing rule before export.
                 </p>
               </div>
             ) : source === "bpmn" ? (
               <div className="mt-8 space-y-3">
+                {scenarioId !== "rebate" && (
+                  <p className="rounded-md border border-[var(--line)] bg-white p-3 text-sm leading-6 text-[var(--muted)]">
+                    Process map: {scenario.processSteps.length} steps.{" "}
+                    {resolved
+                      ? "The selected decision is reflected in the process."
+                      : "The process differs from the workshop evidence."}
+                  </p>
+                )}
                 {scenarioId === "rebate" && (
-                  <p className="rounded-lg bg-[var(--blue-soft)] p-3 text-xs leading-5 text-[var(--blue)]">
-                    Flow map · 7 nodes (A–G) · 1 gateway (F).{" "}
+                  <p className="rounded-md border border-[var(--line)] bg-white p-3 text-sm leading-6 text-[var(--muted)]">
+                    Process map: 7 steps and 1 decision point.{" "}
                     {resolved
                       ? "The agreed approval decision adds explicit value-based routing."
                       : "Current flow sends every claim through manual review."}
@@ -1522,11 +1907,24 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                               resolved &&
                               decision === "primary"
                             ? "Supervisor sign-off (> £500 only)"
-                            : step.label
+                            : scenarioId === "communityMeals" &&
+                                resolved &&
+                                step.id === "C"
+                              ? decision === "primary"
+                                ? "Review signed accounts before eligibility decision"
+                                : "Auto-check applications under £30,000"
+                              : resolved &&
+                                  step.id === scenario.conflictStep &&
+                                  scenarioId !== "rebate"
+                                ? decision === "primary"
+                                  ? (scenario.primaryProcessLabel ?? step.label)
+                                  : (scenario.alternateProcessLabel ??
+                                    step.label)
+                                : step.label
                   return (
                     <div
                       key={step.id}
-                      className={`rounded-xl border p-4 text-sm ${
+                      className={`rounded-md border p-4 text-sm ${
                         nodeConflict
                           ? resolved
                             ? "border-[var(--green-border)] bg-[var(--green-soft)]"
@@ -1537,9 +1935,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span>
-                          Node {step.id} · {label}
-                        </span>
+                        <span>{label}</span>
                         {nodeConflict && (
                           <StatusPill tone={resolved ? "green" : "red"}>
                             {resolved ? "Decision recorded" : "Conflict"}
@@ -1556,19 +1952,43 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                           <div className="rounded-md border border-[var(--line)] bg-white p-2 text-xs">
                             {resolved && decision === "primary"
                               ? "≤ £500 → Auto-approve → queue payment (bypass E + G)"
-                              : "All claims → Review required → Node E → Node G"}
+                              : "All claims → Five-day caseworker check → Supervisor sign-off"}
                           </div>
                           {resolved && decision === "primary" && (
                             <div className="rounded-md border border-[var(--line)] bg-white p-2 text-xs">
-                              &gt; £500 → Node E (5-day check) → Node G
+                              &gt; £500 → Five-day caseworker check →
                               (supervisor)
                             </div>
                           )}
                         </div>
                       )}
+                      {step.gateway && scenarioId === "communityMeals" && (
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          <div className="rounded-md border border-[var(--line)] bg-white p-2 text-xs">
+                            {resolved && decision === "primary"
+                              ? "All applications → Grant officer reviews signed accounts"
+                              : "Under £30,000 → Mark eligible without accounts review"}
+                          </div>
+                          <div className="rounded-md border border-[var(--line)] bg-white p-2 text-xs">
+                            {resolved && decision === "primary"
+                              ? "Missing accounts → Keep draft and request documents"
+                              : "£30,000 or more → Grant officer reviews signed accounts"}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
+                {scenarioId === "communityMeals" && uploadedBpmn && (
+                  <details className="rounded-xl border border-[var(--line)] bg-white p-4">
+                    <summary className="cursor-pointer text-xs font-semibold">
+                      View uploaded BPMN source
+                    </summary>
+                    <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[var(--soft)] p-3 text-[10px] leading-5 text-[var(--muted)]">
+                      {uploadedBpmn.content}
+                    </pre>
+                  </details>
+                )}
               </div>
             ) : source === "custom" ? (
               <div className="mt-8">
@@ -1606,7 +2026,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
 
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[rgba(15,23,42,.54)] p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[rgba(15,23,42,.54)] p-4"
           onMouseDown={(event) =>
             event.target === event.currentTarget && setModalOpen(false)
           }
@@ -1615,15 +2035,15 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             role="dialog"
             aria-modal="true"
             aria-labelledby="export-title"
-            className="my-8 w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="my-8 w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-xl"
           >
             <div className="flex items-start justify-between border-b border-[var(--line)] p-5 md:p-6">
               <div className="flex gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--green-soft)] text-[var(--green-dark)]">
+                <div className="grid size-10 shrink-0 place-items-center text-[var(--green-dark)]">
                   <Icon name="check" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[var(--green-dark)]">
+                  <p className="text-sm font-semibold text-[var(--green-dark)]">
                     {canExport
                       ? "Ready to export"
                       : resolved && !ambiguityConfirmed
@@ -1637,8 +2057,8 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                     {activeStory.key} formatted successfully
                   </h2>
                   <p className="mt-1 text-sm text-[var(--muted)]">
-                    Prepared export only — no Jira issue has been created. Copy
-                    or download to add to your backlog.
+                    This is a draft only. No Jira issue has been created. Copy
+                    or download it to add to your backlog.
                   </p>
                 </div>
               </div>
@@ -1666,12 +2086,12 @@ _Source decision: CONF-01 · ${decisionDescription}._`
                   </button>
                 ))}
               </div>
-              <div className="max-h-[48vh] overflow-auto rounded-xl border border-[var(--line)] bg-[var(--code-bg)]">
+              <div className="max-h-[48vh] overflow-auto rounded-md border border-[var(--line)] bg-[var(--code-bg)]">
                 <div className="sticky top-0 flex items-center justify-between border-b border-[var(--line)] bg-[var(--code-bg)] px-4 py-3">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[var(--muted)]">
+                  <span className="font-mono text-xs font-semibold text-[var(--muted)]">
                     {format} Markdown preview
                   </span>
-                  <span className="rounded-full border border-[var(--green-border)] bg-[var(--green-soft)] px-2 py-1 text-[10px] font-bold text-[var(--green-dark)]">
+                  <span className="text-xs font-semibold text-[var(--green-dark)]">
                     Validated
                   </span>
                 </div>
@@ -1683,13 +2103,13 @@ _Source decision: CONF-01 · ${decisionDescription}._`
             <div className="flex flex-col-reverse gap-2 border-t border-[var(--line)] bg-[var(--soft)] p-4 sm:flex-row sm:justify-end">
               <button
                 onClick={downloadExport}
-                className="flex items-center justify-center gap-2 rounded-xl border border-[var(--line-strong)] bg-white px-4 py-3 text-sm font-bold hover:bg-[var(--canvas)]"
+                className="flex items-center justify-center gap-2 rounded-md border border-[var(--line-strong)] bg-white px-4 py-3 text-sm font-semibold hover:bg-[var(--canvas)]"
               >
                 <Icon name="download" /> Download JSON
               </button>
               <button
                 onClick={copyExport}
-                className="flex items-center justify-center gap-2 rounded-xl bg-[var(--ink)] px-4 py-3 text-sm font-bold text-white hover:opacity-90"
+                className="flex items-center justify-center gap-2 rounded-md bg-[var(--ink)] px-4 py-3 text-sm font-semibold text-white hover:bg-[var(--green-dark)]"
               >
                 <Icon name={copied ? "check" : "copy"} />{" "}
                 {copied ? "Copied" : "Copy to clipboard"}
@@ -1704,55 +2124,50 @@ _Source decision: CONF-01 · ${decisionDescription}._`
 
 function Step({
   label,
-  number,
   state,
   detail,
 }: {
   label: string
-  number: string
   state: "done" | "active" | "locked"
   detail?: string
 }) {
   return (
     <span
-      className={`flex shrink-0 items-center gap-1.5 ${
+      className={`flex min-w-0 items-center gap-2 text-xs ${
         state === "active" ? "text-[var(--ink)]" : "text-[var(--muted)]"
       }`}
     >
       <span
-        className={`grid size-4 place-items-center rounded-full text-[9px] ${
+        className={`grid size-6 shrink-0 place-items-center rounded-full ${
           state === "done"
-            ? "bg-[var(--green-soft)] text-[var(--green-dark)]"
+            ? "bg-[var(--green)] text-white"
             : state === "active"
               ? "bg-[var(--ink)] text-white"
-              : "bg-[var(--soft)]"
+              : "bg-white text-[var(--muted)]"
         }`}
       >
         {state === "done" ? (
-          <Icon name="check" className="size-2.5" />
+          <Icon name="check" className="size-3" />
         ) : state === "locked" ? (
-          <Icon name="lock" className="size-2.5" />
+          <Icon name="lock" className="size-3" />
         ) : (
-          number
+          <Icon name="clock" className="size-3" />
         )}
       </span>
-      {label}
-      {detail && (
-        <span className="ml-0.5 font-normal text-[var(--muted)]">
-          ({detail})
-        </span>
-      )}
+      <span className="min-w-0">
+        <span className="block truncate font-semibold">{label}</span>
+        {detail && (
+          <span className="mt-0.5 block truncate text-xs font-normal text-[var(--muted)]">
+            {detail}
+          </span>
+        )}
+      </span>
     </span>
   )
 }
 
-function SectionLabel({ number, label }: Record<"number" | "label", string>) {
-  return (
-    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.13em]">
-      <span className="font-mono text-[var(--blue)]">{number}</span>
-      <span className="text-[var(--muted)]">{label}</span>
-    </div>
-  )
+function SectionLabel({ label }: { label: string }) {
+  return <h2 className="text-base font-semibold text-[var(--ink)]">{label}</h2>
 }
 
 function SourceFile({
@@ -1767,17 +2182,18 @@ function SourceFile({
   return (
     <button
       onClick={onClick}
-      className="mt-3 flex w-full items-center gap-3 rounded-lg py-2 text-left hover:bg-[var(--soft)]"
+      className="mt-2 flex w-full items-center gap-3 rounded-md py-2 text-left hover:bg-[var(--soft)] focus-visible:outline"
     >
-      <div className="relative grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--soft)] text-[var(--ink)]">
-        <Icon name="file" className="size-4" />
-        <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-[var(--green)] text-white ring-2 ring-white">
-          <Icon name="check" className="size-2.5" />
-        </span>
+      <div className="relative grid size-8 shrink-0 place-items-center text-[var(--green-dark)]">
+        <Icon name="file" className="size-5" />
+        <Icon
+          name="check"
+          className="absolute -right-1 -top-1 size-3 rounded-full bg-white"
+        />
       </div>
       <div className="min-w-0">
         <p className="truncate text-xs font-semibold">{name}</p>
-        <p className="mt-0.5 text-[10px] text-[var(--muted)]">{meta}</p>
+        <p className="mt-0.5 text-xs text-[var(--muted)]">{meta}</p>
       </div>
     </button>
   )
@@ -1803,11 +2219,9 @@ function DirectoryItem({
       <div className="min-w-0 flex-1">
         <div className="flex justify-between text-xs font-semibold">
           <span>{title}</span>
-          <span className="font-mono text-[var(--blue)]">{count}</span>
+          <span className="text-[var(--blue)]">{count}</span>
         </div>
-        <p className="mt-1 truncate text-[10px] text-[var(--muted)]">
-          {detail}
-        </p>
+        <p className="mt-1 truncate text-xs text-[var(--muted)]">{detail}</p>
       </div>
     </div>
   )
@@ -1822,7 +2236,7 @@ function IssueCard({
 }) {
   return (
     <article
-      className={`mt-4 rounded-xl border-l-[3px] p-4 md:p-5 tone-${tone}`}
+      className={`mt-4 rounded-md border border-l-4 p-4 md:p-5 tone-${tone}`}
     >
       {children}
     </article>
@@ -1838,8 +2252,9 @@ function StatusPill({
 }) {
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.1em] pill-${tone}`}
+      className={`inline-flex items-center gap-2 text-xs font-semibold pill-${tone}`}
     >
+      <span className="size-2 rounded-full bg-current" aria-hidden="true" />
       {children}
     </span>
   )
@@ -1859,16 +2274,14 @@ function Quote({
   return (
     <button
       onClick={onClick}
-      className={`text-left rounded-lg border p-3 transition hover:shadow-sm ${
+      className={`rounded-md border-l-2 px-4 py-3 text-left transition-colors hover:bg-[var(--soft)] ${
         selected
-          ? "border-[var(--green-border)] bg-[var(--green-soft)]"
-          : "border-[var(--line)] bg-white"
+          ? "border-[var(--green)] bg-white"
+          : "border-[var(--line-strong)] bg-white"
       }`}
     >
-      <p className="text-[9px] font-bold uppercase tracking-[.1em] text-[var(--muted)]">
-        {source}
-      </p>
-      <p className="mt-1 text-xs font-semibold">“{text}”</p>
+      <p className="text-xs font-semibold text-[var(--muted)]">{source}</p>
+      <p className="mt-2 text-sm leading-6 font-semibold">“{text}”</p>
     </button>
   )
 }
@@ -1896,7 +2309,7 @@ function Criteria({
 
 function Tag({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-md border border-[var(--line)] bg-[var(--soft)] px-2 py-1 text-[10px] font-semibold text-[var(--muted)]">
+    <span className="rounded-md bg-[var(--soft)] px-2 py-1 text-xs font-medium text-[var(--muted)]">
       {children}
     </span>
   )

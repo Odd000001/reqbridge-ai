@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="Definitions_CommunityFoodSupport"
+                  targetNamespace="https://reqbridge.example/community-food-support">
+  <bpmn:process id="Process_CommunityFoodSupport" name="Community Food Support Grant" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Application" name="Application started" />
+    <bpmn:task id="Task_SubmitApplication" name="Submit organisation details and grant request" />
+    <bpmn:task id="Task_UploadAccounts" name="Upload latest signed accounts" />
+    <bpmn:exclusiveGateway id="Gateway_IncomeThreshold" name="Application under £30,000?" />
+    <bpmn:task id="Task_AutoEligibility" name="Mark applications under £30,000 eligible automatically" />
+    <bpmn:task id="Task_ReviewAccounts" name="Grant officer reviews signed accounts" />
+    <bpmn:exclusiveGateway id="Gateway_Eligibility" name="Meets grant criteria?" />
+    <bpmn:task id="Task_ConfirmPayment" name="Finance team confirms payment details" />
+    <bpmn:task id="Task_NotifyDecision" name="Notify organisation of decision" />
+    <bpmn:task id="Task_NotifyDecline" name="Tell organisation why application was declined" />
+    <bpmn:endEvent id="EndEvent_Complete" name="Application complete" />
+    <bpmn:endEvent id="EndEvent_Declined" name="Application declined" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_Application" targetRef="Task_SubmitApplication" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_SubmitApplication" targetRef="Task_UploadAccounts" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_UploadAccounts" targetRef="Gateway_IncomeThreshold" />
+    <bpmn:sequenceFlow id="Flow_4" name="Under £30,000" sourceRef="Gateway_IncomeThreshold" targetRef="Task_AutoEligibility">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[grantAmount < 30000]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_5" name="£30,000 or more" sourceRef="Gateway_IncomeThreshold" targetRef="Task_ReviewAccounts">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[grantAmount >= 30000]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_AutoEligibility" targetRef="Task_ConfirmPayment" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_ReviewAccounts" targetRef="Gateway_Eligibility" />
+    <bpmn:sequenceFlow id="Flow_8" name="Eligible" sourceRef="Gateway_Eligibility" targetRef="Task_ConfirmPayment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[eligible = true]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_9" name="Not eligible" sourceRef="Gateway_Eligibility" targetRef="Task_NotifyDecline">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[eligible = false]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_ConfirmPayment" targetRef="Task_NotifyDecision" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Task_NotifyDecision" targetRef="EndEvent_Complete" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_NotifyDecline" targetRef="EndEvent_Declined" />
+  </bpmn:process>
+</bpmn:definitions>

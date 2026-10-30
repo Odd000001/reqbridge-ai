@@ -1,0 +1,27 @@
+Community Food Support workshop transcript
+Workshop length: 48 minutes
+Service: Community food support grant
+
+13:05 | Community grants lead
+"We need to help local organisations provide food parcels and community meals."
+
+13:12 | Finance officer
+"The grant officer should check the latest signed accounts before deciding eligibility."
+
+13:19 | Programme manager
+"Small organisations may not have a dedicated finance team, so we should explain what documents are accepted."
+
+13:26 | Service designer
+"The current flow marks applications under £30,000 eligible without an accounts review. That is not what we agreed."
+
+13:34 | Community partner
+"Applicants need to know whether a draft has been saved and which documents are still missing."
+
+13:42 | Grants administrator
+"Tell applicants when they will hear back, but we still need to agree the number of working days."
+
+13:51 | Information governance lead
+"Only the grants and finance teams should see the accounts. Set a retention period for the uploaded records."
+
+14:02 | Product owner
+"Record who checked eligibility and why, so the decision can be explained later."
