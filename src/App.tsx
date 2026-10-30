@@ -993,20 +993,11 @@ _Source decision: CONF-01 · ${decisionDescription}._`
               </span>
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold">ReqBridge</p>
+              <p className="text-sm font-bold">Bridgeit</p>
               <p className="truncate text-xs text-[var(--muted)]">
                 {scenario.project}
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setModalOpen(true)}
-              disabled={!canExport}
-              className="hidden items-center gap-2 rounded-md bg-[var(--ink)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--green-dark)] disabled:bg-[var(--disabled)] disabled:text-[var(--muted)] md:flex"
-            >
-              Export to Jira <Icon name="arrow" className="size-3.5" />
-            </button>
           </div>
         </div>
       </header>
@@ -1037,7 +1028,7 @@ _Source decision: CONF-01 · ${decisionDescription}._`
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="font-display text-3xl font-semibold tracking-[-.035em] md:text-4xl">
-              ReqBridge
+              Bridgeit
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)] md:text-base">
               Compare workshop evidence with process maps, resolve open

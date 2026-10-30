@@ -1,4 +1,4 @@
-# ReqBridge AI
+# Bridgeit
 
 Compare workshop notes with process maps, record decisions, and prepare user
 stories and acceptance criteria for backlog review.
@@ -31,6 +31,19 @@ Use `npm.cmd run build` to create a production build.
 Use the example selector in the workspace to switch scenarios. These are sample
 workflows with fixture evidence; exports are copied or downloaded for review.
 The app does not connect to Jira or Azure DevOps.
+
+## Deploy to Vercel
+
+This version is a static demo and does not require environment variables or a
+backend service.
+
+1. Push this branch to GitHub.
+2. In Vercel, choose **Add New → Project** and import the GitHub repository.
+3. Keep the project root at the repository root. Vercel uses `vercel.json` to
+   build with `pnpm run build`, publish `dist`, and route app paths to the
+   frontend.
+4. Choose **Deploy**. Future pushes to the connected branch will trigger new
+   deployments.
 
 ## Upload demo files
 
